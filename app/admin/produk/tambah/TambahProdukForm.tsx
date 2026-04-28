@@ -60,7 +60,7 @@ export default function TambahProdukForm({ categories }: { categories: any[] }) 
   const labelStyle = "block text-[10px] font-black uppercase text-amber-900/50 ml-1 tracking-widest mb-2";
 
   return (
-    <form action={handleSubmit} encType="multipart/form-data" className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+    <form action={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
       
       {/* --- KOLOM KIRI: INFO DASAR & VARIAN --- */}
       <div className="lg:col-span-2 space-y-8">

@@ -35,7 +35,7 @@ export default async function EditKategori({ params }: { params: Promise<{ id: s
             "use server";
             await updateWithId(formData);
             redirect("/admin/kategori");
-          }} encType="multipart/form-data" className="space-y-8">
+          }} className="space-y-8">
             
             <div>
               <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest">Nama Kategori</label>

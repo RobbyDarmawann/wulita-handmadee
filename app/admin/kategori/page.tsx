@@ -40,7 +40,7 @@ export default async function AdminKategori() {
               <Plus className="text-amber-600" /> Tambah Baru
             </h3>
             
-            <form action={addCategory} encType="multipart/form-data" className="space-y-6">
+            <form action={addCategory} className="space-y-6">
               {/* Nama Kategori */}
               <div>
                 <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest">Nama Kategori</label>
