@@ -27,7 +27,7 @@ export default function HomeClient({
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-36 flex flex-col items-center text-center relative z-10">
           <span className="text-amber-600 text-xs font-black uppercase tracking-[0.4em] mb-6">Authentic Gorontalo Art</span>
           <h1 className="text-5xl md:text-8xl font-black text-amber-950 mb-8 tracking-tighter leading-[1.1]">
-            Sentuhan Magis <br />
+            Keindahan Kerajinan Tangan<br />
             <span className="italic font-serif text-amber-700 font-light">di Setiap Detail.</span>
           </h1>
           <p className="text-lg md:text-xl text-amber-900/60 mb-12 max-w-2xl font-medium leading-relaxed">
