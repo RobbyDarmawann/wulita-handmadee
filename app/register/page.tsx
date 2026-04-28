@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { CheckCircle2 } from 'lucide-react'; // Tambahkan icon centang
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -16,6 +17,8 @@ export default function RegisterPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false); // STATE BARU UNTUK NOTIFIKASI
+  
   const router = useRouter();
   const supabase = createClient();
 
@@ -38,7 +41,6 @@ export default function RegisterPage() {
     }
 
     // Mendaftarkan user ke Supabase Auth beserta Metadata-nya
-    // Menambahkan .trim() pada email agar spasi gaib terhapus otomatis
     const { error: authError } = await supabase.auth.signUp({
       email: formData.email.trim(),
       password: formData.password,
@@ -47,6 +49,7 @@ export default function RegisterPage() {
           name: formData.name,
           phone_number: formData.phone_number,
           address: formData.address,
+          role: 'user', // Set default role sebagai user
         },
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -54,16 +57,34 @@ export default function RegisterPage() {
 
     if (authError) {
       setError(authError.message);
+      setLoading(false);
     } else {
-      alert('Pendaftaran berhasil! Silakan cek email Anda untuk verifikasi.');
-      router.push('/login');
+      // TAMPILKAN NOTIFIKASI CUSTOM & REDIRECT OTOMATIS
+      setSuccess(true);
+      setTimeout(() => {
+        router.push('/login');
+      }, 3000); // Tunggu 3 detik sebelum pindah halaman
     }
-    setLoading(false);
   };
 
   return (
     <div className="relative min-h-screen flex items-center justify-center font-sans overflow-hidden">
       
+      {/* NOTIFIKASI TOAST SUCCESS (Pengganti Alert) */}
+      {success && (
+        <div className="fixed top-10 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-500 w-[90%] sm:w-auto transition-all">
+          <div className="bg-white border-2 border-sky-100 shadow-2xl shadow-sky-900/20 px-6 sm:px-8 py-4 rounded-[2rem] flex items-center gap-4 text-gray-800">
+            <div className="bg-sky-500 text-white p-2 rounded-full ring-4 ring-sky-50">
+              <CheckCircle2 size={24} />
+            </div>
+            <div>
+              <p className="font-black text-sm tracking-tight leading-none mb-1 text-gray-900">Pendaftaran Berhasil!</p>
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Mengarahkan ke halaman login...</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* BACKGROUND (Persis Blade) */}
       <div className="fixed inset-0 bg-[#F3E5DC] z-[-1] overflow-hidden flex items-center justify-center">
         <svg className="absolute top-10 left-10 w-32 h-32 text-orange-300/50 rotate-12 drop-shadow-sm" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
@@ -96,7 +117,8 @@ export default function RegisterPage() {
           </div>
         )}
 
-        <form onSubmit={handleRegister} className="flex flex-col gap-5">
+        {/* Jika Sukses, form di-disable agar tidak diisi lagi */}
+        <form onSubmit={handleRegister} className={`flex flex-col gap-5 ${success ? 'opacity-50 pointer-events-none' : ''}`}>
           
           <div className="w-full">
             <label className="block text-[#451a03] font-extrabold text-sm mb-1.5">Nama Penjelajah (Lengkap)</label>
@@ -131,8 +153,8 @@ export default function RegisterPage() {
           </div>
 
           <div className="mt-4">
-            <button type="submit" disabled={loading} className="w-full bg-sky-600 hover:bg-sky-700 text-white py-3.5 rounded-xl font-bold text-sm tracking-wider uppercase transition-all shadow-lg hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-70 disabled:hover:translate-y-0">
-              {loading ? 'Menyiapkan Kapal...' : 'Mulai Petualangan'}
+            <button type="submit" disabled={loading || success} className="w-full bg-sky-600 hover:bg-sky-700 text-white py-3.5 rounded-xl font-bold text-sm tracking-wider uppercase transition-all shadow-lg hover:-translate-y-0.5 active:scale-[0.98] disabled:opacity-70 disabled:hover:translate-y-0">
+              {loading ? 'Menyiapkan Kapal...' : (success ? 'Sukses!' : 'Mulai Petualangan')}
             </button>
           </div>
         </form>

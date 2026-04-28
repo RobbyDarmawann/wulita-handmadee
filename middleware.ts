@@ -49,7 +49,9 @@ export async function middleware(request: NextRequest) {
     } else {
       finalResponse = NextResponse.redirect(new URL('/', request.url)) // User biasa ke Beranda
     }
-  } 
+    } else if (path === '/' && isAdmin) {
+      finalResponse = NextResponse.redirect(new URL('/admin/dashboard', request.url)) 
+    }
   
   // ATURAN 2: Halaman Khusus Admin (/admin/...)
   else if (isAdminPath) {
