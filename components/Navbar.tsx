@@ -10,6 +10,11 @@ export default function Navbar() {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
+
+  // Navbar customer tidak perlu tampil di area admin.
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
   
   // State Dinamis dari Supabase
   const [isAuth, setIsAuth] = useState(false); 
