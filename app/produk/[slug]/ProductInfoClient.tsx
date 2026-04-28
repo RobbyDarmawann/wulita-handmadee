@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -32,11 +32,24 @@ export default function ProductDetailClient({ product, userId }: { product: any,
     selectedVariant?.image ? getImagePath(selectedVariant.image) : getImagePath(product.image)
   );
 
-  // Perhitungan Harga
+  // Perhitungan Harga Dinamis
   const basePrice = product.discount_price > 0 ? product.discount_price : product.price;
   const currentPrice = selectedVariant 
     ? (selectedVariant.price > 0 ? selectedVariant.price : basePrice)
     : basePrice;
+
+  // --- LOGIKA STOK DINAMIS (BARU) ---
+  // Membaca stok dari varian yang dipilih. Jika tidak ada varian, baca dari stok utama produk.
+  const currentStock = selectedVariant && selectedVariant.stock !== undefined
+    ? selectedVariant.stock
+    : (product.stock || 0);
+
+  // Efek untuk mereset quantity ke 1 jika stok varian yang dipilih ternyata 0 atau kurang dari qty saat ini
+  useEffect(() => {
+    if (qty > currentStock) {
+      setQty(Math.max(1, currentStock));
+    }
+  }, [currentStock, qty]);
 
   const formatRupiah = (angka: number) => new Intl.NumberFormat('id-ID', { 
     style: 'currency', 
@@ -70,6 +83,11 @@ export default function ProductDetailClient({ product, userId }: { product: any,
       return;
     }
 
+    if (currentStock === 0) {
+      alert("Maaf, stok untuk varian ini sedang kosong.");
+      return;
+    }
+
     setIsPending(true);
     const formData = new FormData();
     formData.append("productId", product.id.toString());
@@ -79,7 +97,6 @@ export default function ProductDetailClient({ product, userId }: { product: any,
 
     try {
       const result = await addToCart(formData);
-      
       if (result.success) {
         setShowToast(true);
         router.refresh(); 
@@ -97,7 +114,7 @@ export default function ProductDetailClient({ product, userId }: { product: any,
   return (
     <div className="min-h-screen bg-[#FAFAFA] font-sans pb-20 relative overflow-hidden">
       
-      {/* NOTIFIKASI TOAST (Responsif lebar HP) */}
+      {/* NOTIFIKASI TOAST */}
       {showToast && (
         <div className="fixed top-24 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-500 w-[90%] sm:w-auto">
           <div className="bg-white border-2 border-green-100 shadow-2xl shadow-green-900/20 px-6 sm:px-8 py-4 sm:py-5 rounded-[2rem] sm:rounded-[2.5rem] flex flex-wrap sm:flex-nowrap items-center justify-center sm:justify-start gap-4 sm:gap-5 text-gray-800">
@@ -115,7 +132,7 @@ export default function ProductDetailClient({ product, userId }: { product: any,
         </div>
       )}
 
-      {/* TOMBOL EDIT ADMIN (Responsif padding HP) */}
+      {/* TOMBOL EDIT ADMIN */}
       <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50">
         <Link 
           href={`/admin/produk/edit/${product.id}`}
@@ -127,7 +144,7 @@ export default function ProductDetailClient({ product, userId }: { product: any,
         </Link>
       </div>
 
-      {/* BREADCRUMB (Responsif Wrap) */}
+      {/* BREADCRUMB */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-6">
         <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-gray-500 font-medium">
           <Link href="/" className="hover:text-amber-700 flex items-center gap-1 transition-colors">
@@ -204,6 +221,8 @@ export default function ProductDetailClient({ product, userId }: { product: any,
                           onClick={() => {
                             setSelectedVariant(variant);
                             if (variant.image) setActiveImage(getImagePath(variant.image));
+                            // Qty otomatis reset ke 1 saat ganti varian agar tidak error
+                            setQty(1); 
                           }}
                           className={`px-4 py-2 md:px-5 md:py-3 rounded-xl md:rounded-2xl font-bold text-xs md:text-sm border-2 transition-all ${
                             selectedVariant?.id === variant.id 
@@ -218,28 +237,59 @@ export default function ProductDetailClient({ product, userId }: { product: any,
                   </div>
                 )}
 
-                {/* QUANTITY & BUTTON (Responsive Col to Row) */}
-                <div className="flex flex-col sm:flex-row gap-3 md:gap-4 mt-6 md:mt-10">
-                  <div className="flex items-center justify-between sm:justify-center bg-gray-50 border border-gray-200 rounded-xl md:rounded-2xl p-2 h-14 md:h-auto">
-                    <button onClick={() => setQty(Math.max(1, qty - 1))} className="w-10 h-full md:h-10 font-black text-2xl md:text-xl text-amber-900 flex items-center justify-center">-</button>
-                    <span className="w-16 sm:w-12 text-center font-black text-lg text-amber-950">{qty}</span>
-                    <button onClick={() => setQty(qty + 1)} className="w-10 h-full md:h-10 font-black text-2xl md:text-xl text-amber-900 flex items-center justify-center">+</button>
+                {/* INFO STOK DINAMIS (Berdasarkan Varian Terpilih) */}
+                <div className="flex items-center gap-2 mb-4 mt-2">
+                  <div className={`w-2 h-2 rounded-full ${currentStock > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
+                  <span className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">
+                    Persediaan: <span className={currentStock > 0 ? "text-amber-900" : "text-red-500"}>
+                      {currentStock > 0 ? `${currentStock} Pcs` : 'Habis'}
+                    </span>
+                  </span>
+                </div>
+
+                {/* QUANTITY & BUTTON */}
+                <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                  <div className={`flex items-center justify-between sm:justify-center border border-gray-200 rounded-xl md:rounded-2xl p-2 h-14 md:h-auto ${currentStock === 0 ? 'bg-gray-100 opacity-50' : 'bg-gray-50'}`}>
+                    <button 
+                      onClick={() => setQty(Math.max(1, qty - 1))} 
+                      disabled={currentStock === 0}
+                      className="w-10 h-full md:h-10 font-black text-2xl md:text-xl text-amber-900 flex items-center justify-center disabled:opacity-50"
+                    >-</button>
+                    
+                    <span className="w-16 sm:w-12 text-center font-black text-lg text-amber-950">
+                      {currentStock === 0 ? 0 : qty}
+                    </span>
+                    
+                    {/* Logika Math.min mencegah pembeli menekan plus melebihi stok */}
+                    <button 
+                      onClick={() => setQty(Math.min(currentStock, qty + 1))} 
+                      disabled={currentStock === 0 || qty >= currentStock}
+                      className="w-10 h-full md:h-10 font-black text-2xl md:text-xl text-amber-900 flex items-center justify-center disabled:opacity-50"
+                    >+</button>
                   </div>
+
                   <button 
                     onClick={handleAddToCart}
-                    disabled={isPending}
+                    disabled={isPending || currentStock === 0}
                     className={`flex-1 flex items-center justify-center gap-2 md:gap-3 rounded-xl md:rounded-2xl font-black text-base md:text-lg py-4 md:py-0 transition-all shadow-xl ${
-                      isPending ? 'bg-gray-100 text-gray-400' : 'bg-amber-900 hover:bg-black text-white'
+                      isPending || currentStock === 0 
+                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed' 
+                        : 'bg-amber-900 hover:bg-black text-white'
                     }`}
                   >
-                    {isPending ? <Loader2 className="animate-spin" /> : <><ShoppingCart size={20} className="md:w-[22px] md:h-[22px]" /> Masukkan Palka</>}
+                    {isPending ? <Loader2 className="animate-spin" /> : (
+                      <>
+                        <ShoppingCart size={20} className="md:w-[22px] md:h-[22px]" /> 
+                        {currentStock === 0 ? 'Stok Habis' : 'Masukkan Palka'}
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* DESKRIPSI & ULASAN */}
+          {/* DESKRIPSI & ULASAN (Aman, 100% Tidak Disentuh!) */}
           <div className="border-t border-gray-100 bg-gray-50/50 p-5 sm:p-8 md:p-10 lg:p-16">
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 text-gray-800">
               <div className="lg:col-span-2">

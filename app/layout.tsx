@@ -1,9 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { Poppins } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import "./globals.css";
 
+const poppins = Poppins({
+  subsets: ["latin"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"], // Ambil semua ketebalan
+  variable: "--font-poppins", // Buat variabel CSS
+});
 export default function RootLayout({
   children,
 }: {
@@ -17,7 +23,7 @@ export default function RootLayout({
 
   return (
     <html lang="id">
-      <body className="antialiased">
+      <body className={`${poppins.variable} font-sans antialiased`}>
         {/* Tampilkan Navbar HANYA jika BUKAN halaman admin */}
         {!isAdminPage && <Navbar />}
         
