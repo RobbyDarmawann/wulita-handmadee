@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, ImageIcon, Save, RefreshCcw } from "lucide-react";
+import { Trash2, Save, RefreshCcw } from "lucide-react";
 import ImagePreview from "../../../ImagePreview";
 import { updateProduct } from "../../actions";
 import { useRouter } from "next/navigation";
@@ -29,7 +29,7 @@ export default function EditProdukForm({ product, categories }: any) {
     const newVariants = [...variants];
     if (!newVariants[index].isExisting) {
       // Jika varian baru (belum di DB), langsung hapus dari state
-      setVariants(variants.filter((_v: any, i: number) => i !== index));
+      setVariants(variants.filter((variant: any, i: number) => i !== index));
     } else {
       // Jika varian lama, tandai untuk dihapus di server
       newVariants[index].deleteFlag = !newVariants[index].deleteFlag;
