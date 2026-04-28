@@ -1,35 +1,38 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { processCheckout } from "./actions";
+import { processCheckout } from "./actions"; 
 import { Loader2, Coins, ChevronDown, Sparkles, Check } from "lucide-react";
 
-export default function CheckoutClient({ cartItems = [], user }: { cartItems: any[], user: any }) {
+type CartItem = {
+  id: number;
+  productId: number;
+  price: number;
+  quantity: number;
+  product?: { name: string };
+};
+
+export default function CheckoutClient({ cartItems = [], user }: { cartItems: CartItem[], user: any }) {
   const router = useRouter();
   
-  // STATE FORM
   const [deliveryOption, setDeliveryOption] = useState("diantar");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [inputNama, setInputNama] = useState("");
   const [inputPhone, setInputPhone] = useState(""); 
   const [inputAddress, setInputAddress] = useState(""); 
   
-  // STATE UI & POIN
   const [isPending, setIsPending] = useState(false);
   const [usePoints, setUsePoints] = useState(false);
   
-  // STATE CUSTOM DROPDOWN
   const [isDeliveryOpen, setIsDeliveryOpen] = useState(false);
   const [isPaymentOpen, setIsPaymentOpen] = useState(false);
 
-  // DATA ITEM KERANJANG & KALKULASI
   const validItems = Array.isArray(cartItems) ? cartItems : [];
   const subtotal = validItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const ongkir = deliveryOption === "diantar" ? 15000 : 0;
   const initialTotal = subtotal + ongkir;
 
-  // KALKULASI POIN
   const userPoints = user?.points || 0;
   const maxPointsAllowedToUse = Math.floor(initialTotal * 0.5 / 10); 
   const pointsToUse = Math.min(userPoints, maxPointsAllowedToUse);
@@ -44,34 +47,37 @@ export default function CheckoutClient({ cartItems = [], user }: { cartItems: an
     setInputAddress(user?.address || ""); 
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (formData: FormData) => {
     if (!paymentMethod) {
       alert("Pilih metode pembayaran terlebih dahulu, Kapten!");
       return;
     }
 
     setIsPending(true);
-    const formData = new FormData(e.currentTarget);
     
+    formData.append("delivery_option", deliveryOption);
+    formData.append("payment_method", paymentMethod);
     formData.append("use_points", usePoints ? "true" : "false");
     formData.append("points_used", usePoints ? pointsToUse.toString() : "0");
     formData.append("points_discount", usePoints ? discountFromPoints.toString() : "0");
 
-    const res = await processCheckout(formData);
-    if (res.success) {
-      router.push(`/pembayaran/${res.orderId}`); 
-    } else {
-      alert(res.error);
+    try {
+      const res = await processCheckout(formData);
+      if (res.success) {
+        router.push(`/pembayaran/${res.orderId}`); 
+      } else {
+        alert(res.error || "Terjadi kesalahan saat memproses pesanan.");
+        setIsPending(false);
+      }
+    } catch (error) {
+      alert("Sistem gagal merespon. Coba lagi.");
       setIsPending(false);
     }
   };
 
-  // --- STYLING KHUSUS ---
   const inputStyle = "w-full px-5 py-4 bg-amber-50/30 border-2 border-amber-100/80 rounded-[1.25rem] outline-none focus:border-amber-400 focus:ring-[4px] focus:ring-amber-500/10 transition-all duration-300 text-amber-950 placeholder:text-amber-900/30 font-medium shadow-inner";
   const labelStyle = "block text-[10px] font-black text-amber-900/60 uppercase tracking-widest mb-2";
 
-  // DATA OPSI DROPDOWN
   const deliveryOptions = [
     { id: "diantar", label: "Kurir Lokal Wulita (Diantar - Rp 15.000)" },
     { id: "diambil", label: "Ambil Sendiri di Pangkalan (Gratis)" }
@@ -83,10 +89,9 @@ export default function CheckoutClient({ cartItems = [], user }: { cartItems: an
   ];
 
   return (
-    <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-12 items-start">
+    <form action={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-12 items-start">
       <div className="lg:col-span-2 space-y-8">
         
-        {/* PANEL PENGIRIMAN */}
         <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-amber-100/50 shadow-2xl shadow-amber-900/5 relative z-20">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
             <h2 className="text-2xl font-black text-amber-950 tracking-tight">Detail Ekspedisi</h2>
@@ -106,13 +111,8 @@ export default function CheckoutClient({ cartItems = [], user }: { cartItems: an
             </div>
           </div>
 
-          {/* ========================================= */}
-          {/* CUSTOM DROPDOWN: OPSI PENGIRIMAN */}
-          {/* ========================================= */}
           <div className="mb-6 relative">
             <label className={labelStyle}>Opsi Pengiriman *</label>
-            {/* Input hidden agar datanya tetap terkirim saat form di-submit */}
-            <input type="hidden" name="delivery_option" value={deliveryOption} />
             
             <div 
               onClick={() => setIsDeliveryOpen(!isDeliveryOpen)}
@@ -124,10 +124,8 @@ export default function CheckoutClient({ cartItems = [], user }: { cartItems: an
               <ChevronDown className={`text-amber-900/40 group-hover:text-amber-600 transition-all duration-300 ${isDeliveryOpen ? 'rotate-180 text-amber-600' : ''}`} size={20} />
             </div>
 
-            {/* Backdrop transparan untuk menutup dropdown saat klik di luar */}
             {isDeliveryOpen && <div className="fixed inset-0 z-10" onClick={() => setIsDeliveryOpen(false)}></div>}
 
-            {/* Menu Item Dropdown Mulus */}
             {isDeliveryOpen && (
               <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-[1.25rem] border border-amber-100 shadow-xl shadow-amber-900/10 overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-200">
                 {deliveryOptions.map((opt) => (
@@ -159,16 +157,10 @@ export default function CheckoutClient({ cartItems = [], user }: { cartItems: an
           </div>
         </div>
 
-        {/* PANEL PEMBAYARAN */}
         <div className="bg-white p-8 md:p-10 rounded-[2.5rem] border border-amber-100/50 shadow-2xl shadow-amber-900/5 relative z-10">
           <h2 className="text-2xl font-black text-amber-950 tracking-tight mb-6">Metode Pembayaran</h2>
           
-          {/* ========================================= */}
-          {/* CUSTOM DROPDOWN: METODE PEMBAYARAN */}
-          {/* ========================================= */}
           <div className="relative">
-            <input type="hidden" name="payment_method" value={paymentMethod} required />
-            
             <div 
               onClick={() => setIsPaymentOpen(!isPaymentOpen)}
               className={`${inputStyle} cursor-pointer flex justify-between items-center group relative z-20 ${isPaymentOpen ? 'border-amber-400 ring-[4px] ring-amber-500/10' : ''}`}
@@ -201,7 +193,6 @@ export default function CheckoutClient({ cartItems = [], user }: { cartItems: an
         </div>
       </div>
 
-      {/* PANEL RINGKASAN (STICKY KANAN) */}
       <div className="lg:col-span-1">
         <div className="bg-gradient-to-b from-[#F3E5DC]/80 to-amber-50 p-8 md:p-10 rounded-[2.5rem] border-2 border-white shadow-2xl shadow-amber-900/10 lg:sticky lg:top-28">
           <h2 className="text-xl font-black text-amber-950 tracking-tight mb-6 flex items-center gap-2">
@@ -242,7 +233,6 @@ export default function CheckoutClient({ cartItems = [], user }: { cartItems: an
             )}
           </div>
 
-          {/* PANEL WULITA REWARDS */}
           {userPoints > 0 && (
             <div className="mb-6 p-5 bg-white/60 backdrop-blur-sm rounded-[1.5rem] border border-white shadow-sm flex items-start gap-4 transition-all hover:bg-white">
               <div className="bg-gradient-to-br from-amber-400 to-amber-600 text-white p-2 rounded-xl shadow-md shrink-0">

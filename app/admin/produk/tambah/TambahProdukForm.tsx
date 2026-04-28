@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Plus, Trash2, ImageIcon, Package, Info, Tags, Save } from "lucide-react";
+import { useState } from "react";
+import { Trash2, ImageIcon, Package, Info, Tags, Save, ChevronDown, Check } from "lucide-react";
 import { addProduct } from "../actions";
 import { useRouter } from "next/navigation";
 
@@ -9,15 +9,16 @@ export default function TambahProdukForm({ categories }: { categories: any[] }) 
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   
-  // State untuk Varian Dinamis
+  // STATE CUSTOM DROPDOWN KATEGORI
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  
+  // State Varian Dinamis
   const [variants, setVariants] = useState([
     { id: Date.now(), name: "", price: "", stock: "", imagePreview: null as string | null }
   ]);
-
-  // State untuk Preview Gambar Utama
   const [mainImagePreview, setMainImagePreview] = useState<string | null>(null);
 
-  // Auto-kalkulasi Stok Total (Setiap kali variants berubah)
   const totalStock = variants.reduce((acc, curr) => acc + (parseInt(curr.stock) || 0), 0);
 
   const handleAddVariant = () => {
@@ -43,73 +44,82 @@ export default function TambahProdukForm({ categories }: { categories: any[] }) 
     }));
   };
 
+  const handleSubmit = async (formData: FormData) => {
+    if (!selectedCategory) {
+      alert("Pilih Kategori Pusaka terlebih dahulu, Kapten!");
+      return;
+    }
+    setLoading(true);
+    await addProduct(formData);
+    router.push("/admin/produk");
+  };
+
+  const inputStyle = "w-full px-5 py-4 bg-amber-50/30 border-2 border-amber-100/80 rounded-[1.25rem] outline-none focus:border-amber-400 focus:ring-[4px] focus:ring-amber-500/10 transition-all duration-300 text-amber-950 placeholder:text-amber-900/30 font-medium shadow-inner";
+  const labelStyle = "block text-[10px] font-black uppercase text-amber-900/50 ml-1 tracking-widest mb-2";
+
   return (
-    <form action={async (formData) => {
-      setLoading(true);
-      await addProduct(formData);
-      router.push("/admin/produk");
-    }} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <form action={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
       
       {/* --- KOLOM KIRI: INFO DASAR & VARIAN --- */}
       <div className="lg:col-span-2 space-y-8">
         
         {/* Section 1: Informasi Dasar */}
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-          <h3 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
-            <span className="w-10 h-10 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-sm font-black">01</span>
+        <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl shadow-amber-900/5 border border-amber-100/50">
+          <h3 className="text-xl font-black text-amber-950 mb-8 flex items-center gap-3">
+            <span className="w-10 h-10 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center text-sm font-black shadow-inner">01</span>
             Informasi Dasar Pusaka
           </h3>
           <div className="space-y-6">
             <div>
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest">Nama Produk</label>
-              <input name="name" type="text" required placeholder="Contoh: Gelang Sulam Karawo Emas" className="w-full mt-2 px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-amber-500 text-sm font-bold shadow-inner" />
+              <label className={labelStyle}>Nama Produk *</label>
+              <input name="name" type="text" required placeholder="Contoh: Gelang Sulam Karawo Emas" className={inputStyle} />
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest">Deskripsi Detail</label>
-              <textarea name="description" rows={5} placeholder="Ceritakan keunikan produk buatan tangan ini..." className="w-full mt-2 px-6 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-amber-500 text-sm font-medium shadow-inner"></textarea>
+              <label className={labelStyle}>Deskripsi Detail</label>
+              <textarea name="description" rows={5} placeholder="Ceritakan nilai filosofis dan detail produk ini..." className={inputStyle}></textarea>
             </div>
           </div>
         </div>
 
-        {/* Section 2: Manajemen Varian (Dinamis) */}
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100">
-          <div className="flex justify-between items-start mb-6">
-            <h3 className="text-xl font-black text-gray-900 flex items-center gap-3">
-              <span className="w-10 h-10 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center text-sm font-black">02</span>
-              Varian Produk
+        {/* Section 2: Manajemen Varian */}
+        <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl shadow-amber-900/5 border border-amber-100/50">
+          <div className="flex justify-between items-center mb-8">
+            <h3 className="text-xl font-black text-amber-950 flex items-center gap-3">
+              <span className="w-10 h-10 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center text-sm font-black shadow-inner">02</span>
+              Varian (Ukuran/Warna)
             </h3>
-            <button type="button" onClick={handleAddVariant} className="px-4 py-2 bg-amber-50 text-amber-700 rounded-xl text-xs font-black uppercase hover:bg-amber-100 transition-all">
-              + Tambah Baris
+            <button type="button" onClick={handleAddVariant} className="px-5 py-2.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-amber-100 hover:-translate-y-0.5 transition-all">
+              + Tambah Varian
             </button>
           </div>
 
           <div className="space-y-4">
             {variants.map((v, index) => (
-              <div key={v.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50/50 p-5 rounded-3xl border border-gray-100 relative group">
+              <div key={v.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-amber-50/20 p-5 rounded-[1.5rem] border border-amber-100/80 relative group hover:border-amber-300 transition-colors">
                 <button 
                   type="button" 
                   onClick={() => handleRemoveVariant(v.id)}
-                  className="absolute -top-2 -right-2 w-8 h-8 bg-white text-red-500 rounded-full shadow-md flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                  className="absolute -top-3 -right-3 w-8 h-8 bg-white border border-red-100 text-red-500 rounded-full shadow-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
                 >
                   <Trash2 size={14} />
                 </button>
 
                 <div className="md:col-span-1">
-                  <input name={`variants[${index}][name]`} value={v.name} onChange={(e) => handleVariantChange(v.id, 'name', e.target.value)} placeholder="Nama Varian" required className="w-full px-4 py-3 rounded-xl border-none bg-white text-xs font-bold shadow-sm focus:ring-2 focus:ring-amber-500" />
+                  <input name={`variants[${index}][name]`} value={v.name} onChange={(e) => handleVariantChange(v.id, 'name', e.target.value)} placeholder="Nama Varian" required className="w-full px-4 py-3.5 rounded-xl border border-amber-100 outline-none bg-white text-xs font-bold shadow-sm focus:ring-2 focus:ring-amber-500 text-amber-950" />
                 </div>
                 <div>
-                  <input name={`variants[${index}][price]`} value={v.price} onChange={(e) => handleVariantChange(v.id, 'price', e.target.value)} type="number" placeholder="Harga Opsional" className="w-full px-4 py-3 rounded-xl border-none bg-white text-xs font-bold shadow-sm focus:ring-2 focus:ring-amber-500" />
+                  <input name={`variants[${index}][price]`} value={v.price} onChange={(e) => handleVariantChange(v.id, 'price', e.target.value)} type="number" placeholder="Harga (+/-)" className="w-full px-4 py-3.5 rounded-xl border border-amber-100 outline-none bg-white text-xs font-bold shadow-sm focus:ring-2 focus:ring-amber-500 text-amber-950" />
                 </div>
                 <div>
-                  <input name={`variants[${index}][stock]`} value={v.stock} onChange={(e) => handleVariantChange(v.id, 'stock', e.target.value)} type="number" placeholder="Stok" required className="w-full px-4 py-3 rounded-xl border-none bg-white text-xs font-bold shadow-sm focus:ring-2 focus:ring-amber-500" />
+                  <input name={`variants[${index}][stock]`} value={v.stock} onChange={(e) => handleVariantChange(v.id, 'stock', e.target.value)} type="number" placeholder="Stok" required className="w-full px-4 py-3.5 rounded-xl border border-amber-100 outline-none bg-white text-xs font-bold shadow-sm focus:ring-2 focus:ring-amber-500 text-amber-950" />
                 </div>
                 <div className="flex items-center gap-3">
-                  <label className="flex-1 cursor-pointer">
-                    <div className="h-10 bg-white rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden">
+                  <label className="flex-1 cursor-pointer group/img">
+                    <div className="h-11 bg-white rounded-xl border-2 border-dashed border-amber-200 flex items-center justify-center overflow-hidden group-hover/img:border-amber-400 transition-colors">
                       {v.imagePreview ? (
                         <img src={v.imagePreview} className="w-full h-full object-cover" />
                       ) : (
-                        <ImageIcon size={16} className="text-gray-300" />
+                        <ImageIcon size={16} className="text-amber-900/30 group-hover/img:text-amber-500" />
                       )}
                     </div>
                     <input name={`variants[${index}][image]`} type="file" accept="image/*" className="hidden" onChange={(e) => handleVariantChange(v.id, 'image', e)} />
@@ -124,19 +134,18 @@ export default function TambahProdukForm({ categories }: { categories: any[] }) 
       {/* --- KOLOM KANAN: MEDIA & PENGATURAN HARGA --- */}
       <div className="lg:col-span-1 space-y-8">
         
-        {/* Foto Utama */}
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 text-center">
-          <h3 className="text-sm font-black text-gray-900 mb-4 uppercase tracking-widest">Foto Utama</h3>
+        <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl shadow-amber-900/5 border border-amber-100/50 text-center">
+          <h3 className={labelStyle + " text-center mb-4"}>Foto Utama *</h3>
           <label className="cursor-pointer group">
-            <div className="aspect-square bg-gray-50 rounded-[2rem] border-2 border-dashed border-gray-200 flex flex-col items-center justify-center transition-all group-hover:border-amber-400 overflow-hidden relative">
+            <div className="aspect-square bg-amber-50/30 rounded-[2rem] border-2 border-dashed border-amber-200 flex flex-col items-center justify-center transition-all group-hover:border-amber-500 overflow-hidden relative shadow-inner">
               {mainImagePreview ? (
                 <img src={mainImagePreview} className="w-full h-full object-cover" />
               ) : (
                 <>
-                  <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center text-gray-300 mb-3 group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 bg-white rounded-2xl shadow-sm border border-amber-100 flex items-center justify-center text-amber-900/30 mb-3 group-hover:scale-110 group-hover:text-amber-500 transition-all">
                     <ImageIcon size={32} />
                   </div>
-                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-tighter">Upload Foto Utama</span>
+                  <span className="text-[10px] font-black text-amber-900/40 uppercase tracking-[0.2em]">Upload Foto Utama</span>
                 </>
               )}
             </div>
@@ -147,37 +156,68 @@ export default function TambahProdukForm({ categories }: { categories: any[] }) 
           </label>
         </div>
 
-        {/* Pengaturan Harga & Kategori */}
-        <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-6">
-          <div>
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest flex items-center gap-1.5"><Tags size={12} /> Kategori</label>
-            <select name="category_id" required className="w-full mt-2 px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-amber-500 text-sm font-bold appearance-none">
-              <option value="">Pilih Kategori</option>
-              {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-            </select>
+        <div className="bg-gradient-to-br from-amber-50 to-[#F3E5DC]/50 p-8 md:p-10 rounded-[2.5rem] shadow-xl shadow-amber-900/5 border-2 border-white space-y-8 relative z-20">
+          
+          {/* ========================================= */}
+          {/* CUSTOM DROPDOWN: KATEGORI */}
+          {/* ========================================= */}
+          <div className="relative">
+            <label className={labelStyle + " flex items-center gap-1.5"}><Tags size={12} /> Kategori Pusaka *</label>
+            <input type="hidden" name="category_id" value={selectedCategory} required />
+            
+            <div 
+              onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+              className={`w-full px-5 py-4 bg-white border-2 rounded-[1.25rem] cursor-pointer flex justify-between items-center transition-all shadow-sm ${isCategoryOpen ? 'border-amber-400 ring-[4px] ring-amber-500/10' : 'border-amber-100/80 hover:border-amber-300'}`}
+            >
+              <span className={`font-bold text-sm ${selectedCategory ? 'text-amber-950' : 'text-amber-900/40'}`}>
+                {selectedCategory ? categories.find(c => c.id.toString() === selectedCategory.toString())?.name : "Pilih Kategori..."}
+              </span>
+              <ChevronDown size={20} className={`transition-transform duration-300 ${isCategoryOpen ? 'rotate-180 text-amber-600' : 'text-amber-900/40'}`} />
+            </div>
+
+            {isCategoryOpen && <div className="fixed inset-0 z-10" onClick={() => setIsCategoryOpen(false)}></div>}
+
+            {isCategoryOpen && (
+              <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-[1.25rem] border border-amber-100 shadow-2xl shadow-amber-900/20 overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="max-h-60 overflow-y-auto custom-scrollbar p-2">
+                  {categories.map((cat) => (
+                    <div 
+                      key={cat.id}
+                      onClick={() => { setSelectedCategory(cat.id.toString()); setIsCategoryOpen(false); }}
+                      className={`px-4 py-3.5 cursor-pointer rounded-xl flex justify-between items-center transition-all mb-1 last:mb-0 ${selectedCategory === cat.id.toString() ? 'bg-amber-50' : 'hover:bg-gray-50'}`}
+                    >
+                      <span className={`text-sm font-bold ${selectedCategory === cat.id.toString() ? 'text-amber-950' : 'text-gray-600'}`}>
+                        {cat.name}
+                      </span>
+                      {selectedCategory === cat.id.toString() && <Check size={16} className="text-amber-600" />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest">Harga Utama (Rp)</label>
-            <input name="price" type="number" required placeholder="0" className="w-full mt-2 px-5 py-3 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-amber-500 text-lg font-black text-amber-900" />
+            <label className={labelStyle}>Harga Utama (Rp) *</label>
+            <input name="price" type="number" required placeholder="0" className="w-full px-5 py-4 bg-white border border-amber-100 rounded-[1.25rem] focus:ring-2 focus:ring-amber-500 outline-none text-xl font-black text-amber-950 shadow-sm" />
           </div>
 
-          <div className="p-5 bg-red-50 rounded-3xl border border-red-100">
-            <label className="text-[10px] font-black uppercase text-red-900 tracking-widest flex items-center gap-1.5"><Info size={12} /> Harga Promo (Opsional)</label>
-            <input name="discount_price" type="number" placeholder="Tak ada promo" className="w-full mt-2 px-4 py-3 bg-white border-none rounded-xl focus:ring-2 focus:ring-red-500 text-sm font-bold text-red-600 shadow-sm" />
+          <div className="p-5 bg-white/60 rounded-[1.5rem] border border-red-100 shadow-sm">
+            <label className="text-[10px] font-black uppercase text-red-900/60 tracking-widest flex items-center gap-1.5 mb-2"><Info size={12} /> Harga Promo</label>
+            <input name="discount_price" type="number" placeholder="Lewati jika tak ada promo" className="w-full px-5 py-3.5 bg-white border border-red-100 rounded-xl focus:ring-2 focus:ring-red-400 outline-none text-sm font-bold text-red-600 shadow-sm placeholder:text-red-900/30" />
           </div>
 
-          <div>
-            <label className="text-[10px] font-black uppercase text-gray-400 ml-1 tracking-widest flex items-center gap-1.5"><Package size={12} /> Total Stok (Otomatis)</label>
-            <input type="number" value={totalStock} readOnly className="w-full mt-2 px-5 py-3 bg-gray-100 border border-gray-200 rounded-2xl text-gray-400 font-black cursor-not-allowed" />
+          <div className="border-t border-amber-200/50 pt-6">
+            <label className={labelStyle + " flex items-center gap-1.5"}><Package size={12} /> Total Stok Tersedia</label>
+            <input type="number" value={totalStock} readOnly className="w-full px-5 py-4 bg-amber-950/5 border border-amber-900/10 rounded-[1.25rem] text-amber-950 font-black cursor-not-allowed outline-none" />
           </div>
 
           <button 
             type="submit" 
             disabled={loading}
-            className="w-full bg-amber-900 hover:bg-black text-white py-5 rounded-[2rem] font-black text-sm transition-all shadow-xl shadow-amber-900/30 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-amber-950 hover:bg-black text-white py-5 rounded-[1.25rem] font-black uppercase text-xs tracking-[0.2em] transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/20 active:translate-y-0 flex items-center justify-center gap-3 disabled:bg-gray-300 disabled:shadow-none disabled:transform-none disabled:cursor-not-allowed"
           >
-            {loading ? "Menerbitkan..." : <><Save size={20} /> Terbitkan Pusaka</>}
+            {loading ? "Menyimpan..." : <><Save size={18} /> Terbitkan Pusaka</>}
           </button>
         </div>
 
