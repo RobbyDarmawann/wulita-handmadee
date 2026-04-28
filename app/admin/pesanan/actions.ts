@@ -6,64 +6,57 @@ import { revalidatePath } from "next/cache";
 
 export async function updateOrderStatus(orderId: number, newStatus: string) {
   try {
-    // 1. Jalankan di dalam transaksi agar aman jika terjadi kegagalan
+    console.log(`[POIN SYSTEM] Memulai update order #${orderId} ke status: "${newStatus}"`);
+    
+    // 1. Jalankan di dalam transaksi
     await prisma.$transaction(async (tx) => {
-      // Ambil data order saat ini untuk mengecek status dan total harga
       const currentOrder = await tx.order.findUnique({
         where: { id: orderId }
       });
 
       if (!currentOrder) throw new Error("Pesanan tidak ditemukan.");
 
-      // Siapkan data yang akan di-update
       const updateData: any = { status: newStatus };
+      
+      // BERSIHKAN STRING STATUS DARI SPASI GAIB & HURUF BESAR
+      const cleanStatus = newStatus.trim().toLowerCase();
+      
+      console.log(`[POIN SYSTEM] Status Bersih: "${cleanStatus}", Poin Order Saat Ini: ${currentOrder.pointsEarned}, UserID: ${currentOrder.userId}`);
 
       // ==============================================================
       // FITUR LOYALITAS: BERIKAN POIN JIKA STATUS MENJADI "SELESAI"
       // ==============================================================
-      // Syarat:
-      // 1. Status baru adalah "selesai".
-      // 2. Pesanan ini belum pernah diberikan poin sebelumnya (pointsEarned == 0).
-      // 3. User terkait tidak null (Guest tidak dapat poin).
-      if (newStatus.toLowerCase() === "selesai" && currentOrder.pointsEarned === 0 && currentOrder.userId) {
+    if (cleanStatus.includes("selesai") && currentOrder.pointsEarned === 0 && currentOrder.userId) {
         
-        // Aturan: 1% dari total belanja (hanya harga produk/subtotal, ongkir diabaikan)
-        // Jika ongkir masuk total: (currentOrder.totalPrice - currentOrder.shippingCost)
         const subtotal = currentOrder.totalPrice - currentOrder.shippingCost;
-        
-        // Hitung poin (Dibulatkan ke bawah. Misal: 100.900 * 1% = 1009 poin)
-        // Maksimal Capping: 5000 Poin (sesuai kesepakatan)
-        let calculatedPoints = Math.floor(subtotal * 0.01);
-        if (calculatedPoints > 5000) {
-          calculatedPoints = 5000;
-        }
+        let calculatedPoints = Math.floor(subtotal / 1000);
+        if (calculatedPoints > 5000) calculatedPoints = 5000;
 
-        // Catat berapa poin yang didapat di tabel Order
+        console.log(`[POIN SYSTEM] ✅ Syarat terpenuhi! Memberikan ${calculatedPoints} Poin ke User ${currentOrder.userId}`);
+
         updateData.pointsEarned = calculatedPoints;
 
-        // Tambahkan saldo poin ke tabel User
         await tx.user.update({
           where: { id: currentOrder.userId },
           data: { points: { increment: calculatedPoints } }
         });
-      }
-
+      } 
       // ==============================================================
-      // FITUR KOREKSI: TARIK POIN JIKA STATUS DIBATALKAN (OPSIONAL)
+      // FITUR KOREKSI: TARIK POIN JIKA STATUS BATAL / MUNDUR
       // ==============================================================
-      // Jika Admin tidak sengaja pencet "Selesai", lalu diubah ke "Dibatalkan", kita tarik lagi poinnya
-      if (newStatus.toLowerCase() !== "selesai" && currentOrder.pointsEarned > 0 && currentOrder.userId) {
-        // Kurangi saldo poin user
+      else if (!cleanStatus.includes("selesai") && currentOrder.pointsEarned > 0 && currentOrder.userId) {
+        
+        console.log(`[POIN SYSTEM] ⚠️ Status mundur! Menarik kembali ${currentOrder.pointsEarned} Poin dari User ${currentOrder.userId}`);
+        
         await tx.user.update({
           where: { id: currentOrder.userId },
-          // Pastikan poin tidak menjadi minus (meskipun prisma decrement aman, kita cegah bug)
           data: { points: { decrement: currentOrder.pointsEarned } }
         });
         
-        // Reset catatan poin di Order
         updateData.pointsEarned = 0;
+      } else {
+        console.log(`[POIN SYSTEM] ℹ️ Tidak ada perubahan poin untuk transaksi ini.`);
       }
-
       // Lakukan update pada order
       await tx.order.update({
         where: { id: orderId },
@@ -71,9 +64,14 @@ export async function updateOrderStatus(orderId: number, newStatus: string) {
       });
     });
 
-    // Refresh halaman list dan detail
+    // ==============================================================
+    // SAPU JAGAT CACHE (Ini yang bikin poin langsung muncul!)
+    // ==============================================================
     revalidatePath("/admin/pesanan");
     revalidatePath(`/admin/pesanan/${orderId}`);
+    
+    // Memaksa SELURUH halaman (termasuk Profil dan Navbar user) untuk refresh data terbaru dari database
+    revalidatePath("/", "layout"); 
     
     return { success: true };
   } catch (error: any) {
