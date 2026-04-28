@@ -29,7 +29,7 @@ export default function EditProdukForm({ product, categories }: any) {
     const newVariants = [...variants];
     if (!newVariants[index].isExisting) {
       // Jika varian baru (belum di DB), langsung hapus dari state
-      setVariants(variants.filter((_, i) => i !== index));
+      setVariants(variants.filter((_v: any, i: number) => i !== index));
     } else {
       // Jika varian lama, tandai untuk dihapus di server
       newVariants[index].deleteFlag = !newVariants[index].deleteFlag;
