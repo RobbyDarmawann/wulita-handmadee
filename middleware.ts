@@ -2,7 +2,6 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
-  // Setup response bawaan
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -12,7 +11,6 @@ export async function middleware(request: NextRequest) {
       cookies: {
         get(name: string) { return request.cookies.get(name)?.value },
         set(name: string, value: string, options: any) {
-          // Pastikan cookie juga di-set di request agar bisa dibaca langsung
           request.cookies.set({ name, value, ...options })
           supabaseResponse = NextResponse.next({ request })
           supabaseResponse.cookies.set({ name, value, ...options })
@@ -26,7 +24,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
-  // 1. Ambil data user (sekaligus me-refresh sesi jika hampir kedaluwarsa)
+  // 1. Ambil data user beserta metadatanya
   const { data: { user } } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
@@ -36,39 +34,49 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath = ['/dashboard', '/keranjang', '/pesanan', '/chat'].some(p => path.startsWith(p))
   const isAuthPath = path.startsWith('/login') || path.startsWith('/register')
 
-  // 3. Deteksi Admin (Sesuai dengan logika email di Navbar Kapten)
-  const isAdmin = user?.email === 'admin@wulita.com'
+  // =========================================================================
+  // 3. DETEKSI BERDASARKAN ROLE (Bukan Email!)
+  // =========================================================================
+  // Kita ambil 'role' dari metadata Supabase. Jika kosong, anggap sebagai 'user' (pelanggan).
+  const userRole = user?.user_metadata?.role || 'user'
+  const isAdmin = userRole === 'admin'
 
   let finalResponse = supabaseResponse
 
-  // --- ATURAN LALU LINTAS 🚦 ---
+  // --- ATURAN LALU LINTAS BERDASARKAN ROLE 🚦 ---
 
   // ATURAN 1: Halaman Login & Register
   if (isAuthPath && user) {
-    // Jika sudah login tapi iseng buka halaman /login, tendang ke area masing-masing
-    finalResponse = NextResponse.redirect(new URL(isAdmin ? '/admin/dashboard' : '/', request.url))
+    // Jika sudah login, arahkan ke halaman sesuai rolenya masing-masing
+    if (isAdmin) {
+      finalResponse = NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    } else {
+      finalResponse = NextResponse.redirect(new URL('/', request.url)) // User biasa ke Beranda
+    }
   } 
   
   // ATURAN 2: Halaman Khusus Admin (/admin/...)
   else if (isAdminPath) {
     if (!user) {
-      // Penumpang gelap (belum login), lempar ke login
       finalResponse = NextResponse.redirect(new URL('/login', request.url))
     } else if (!isAdmin) {
-      // Sudah login tapi bukan admin (User biasa nyasar), lempar ke Beranda
+      // Role nya 'user', tapi maksa masuk ke /admin. Tendang keluar!
       finalResponse = NextResponse.redirect(new URL('/', request.url))
     }
   } 
   
-  // ATURAN 3: Halaman Khusus User Tertentu (/keranjang, /pesanan, /chat, /dashboard)
-  else if (isProtectedPath && !user) {
-    // Belum login tapi mau buka keranjang/pesanan
-    finalResponse = NextResponse.redirect(new URL('/login', request.url))
+  // ATURAN 3: Halaman Khusus Pelanggan (/keranjang, /pesanan, dll)
+  else if (isProtectedPath) {
+    if (!user) {
+      finalResponse = NextResponse.redirect(new URL('/login', request.url))
+    } 
+    // Jika admin iseng mau masuk ke /keranjang, lempar balik ke dashboard admin
+    else if (isAdmin && path.startsWith('/keranjang')) {
+      finalResponse = NextResponse.redirect(new URL('/admin/dashboard', request.url))
+    }
   }
 
-  // --- KUNCI PENTING: TRANSFER COOKIES ---
-  // Jika terjadi pengalihan rute (redirect), kita harus memastikan cookie sesi 
-  // yang baru saja direfresh oleh Supabase tidak hilang/tertinggal.
+  // Transfer Cookies agar sesi aman
   if (finalResponse !== supabaseResponse) {
     supabaseResponse.cookies.getAll().forEach((cookie) => {
       finalResponse.cookies.set(cookie.name, cookie.value)
