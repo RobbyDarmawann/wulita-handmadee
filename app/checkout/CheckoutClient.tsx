@@ -1,3 +1,4 @@
+// FILE: app/checkout/CheckoutClient.tsx
 "use client";
 
 import { useState } from "react";
@@ -168,13 +169,14 @@ export default function CheckoutClient({ cartItems = [], user }: { cartItems: Ca
               <span className={`font-bold truncate pr-4 ${paymentMethod ? 'text-amber-950' : 'text-amber-900/40'}`}>
                 {paymentMethod ? paymentOptions.find(opt => opt.id === paymentMethod)?.label : "-- Pilih Cara Bayar --"}
               </span>
-              <ChevronDown className={`text-amber-900/40 group-hover:text-amber-600 transition-all duration-300 ${isPaymentOpen ? 'rotate-180 text-amber-600' : ''}`} size={24} />
+              <ChevronDown className={`text-amber-900/40 group-hover:text-amber-600 transition-all duration-300 ${isPaymentOpen ? 'rotate-0 text-amber-600' : 'rotate-180 text-amber-900/40'}`} size={24} />
             </div>
 
             {isPaymentOpen && <div className="fixed inset-0 z-10" onClick={() => setIsPaymentOpen(false)}></div>}
 
+            {/* PERBAIKAN: "bottom-full mb-2" BIKIN DIA BUKA KE ATAS! */}
             {isPaymentOpen && (
-              <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-[1.25rem] border border-amber-100 shadow-xl shadow-amber-900/10 overflow-hidden z-30 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="absolute bottom-full left-0 mb-2 w-full bg-white rounded-[1.25rem] border border-amber-100 shadow-[0_-15px_40px_rgba(120,53,15,0.15)] overflow-hidden z-30 animate-in fade-in slide-in-from-bottom-2 duration-200 origin-bottom">
                 {paymentOptions.map((opt) => (
                   <div 
                     key={opt.id}

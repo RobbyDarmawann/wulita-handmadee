@@ -1,18 +1,29 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { sendMessage, escalateToAdmin } from "./actions";
-import { Send, X, Headphones, Bot, User, ChevronRight } from "lucide-react";
+// PERHATIKAN: Saya tambahkan revertToBot di import
+import { sendMessage, escalateToAdmin, revertToBot } from "./actions";
+import { Send, X, Headphones, Bot, User, ChevronRight, Power } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function ChatClient({ initialMessages, productContext, isEscalated }: any) {
+  const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
   const [msg, setMsg] = useState("");
   const [activeProduct, setActiveProduct] = useState(productContext);
+  const [isEndingSession, setIsEndingSession] = useState(false);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [initialMessages]);
+
+  const handleEndSession = async () => {
+    setIsEndingSession(true);
+    await revertToBot();
+    setIsEndingSession(false);
+    router.refresh();
+  };
 
   return (
     <div className="w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden flex flex-col h-[700px] relative animate-in zoom-in-95 duration-300">
@@ -23,10 +34,10 @@ export default function ChatClient({ initialMessages, productContext, isEscalate
         <div className="w-12 h-12 bg-white rounded-2xl p-1.5 shadow-xl rotate-3 group flex-shrink-0">
           <img src="/images/logo.png" className="w-full h-full object-contain -rotate-3" />
         </div>
-        <div className="relative z-10">
+        <div className="relative z-10 flex-grow">
           <h2 className="text-white font-black text-lg tracking-tight">Wulita Care</h2>
           <p className="text-amber-400 text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-1.5 mt-0.5">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+            <span className={`w-2 h-2 rounded-full animate-pulse ${isEscalated ? 'bg-red-400' : 'bg-green-400'}`}></span>
             {isEscalated ? 'Admin Online' : 'Asisten Otomatis'}
           </p>
         </div>
@@ -77,6 +88,29 @@ export default function ChatClient({ initialMessages, productContext, isEscalate
 
       {/* Input Area */}
       <div className="p-6 bg-white border-t border-gray-100 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+        
+        {/* BANNER AKTIF ADMIN (BARU) */}
+        {isEscalated && (
+          <div className="mb-4 bg-red-50 p-3 rounded-2xl border border-red-100 flex items-center justify-between group animate-in slide-in-from-bottom-2 shadow-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-red-500 shadow-sm">
+                <Headphones size={14} />
+              </div>
+              <div className="min-w-0 pr-2">
+                <p className="text-[9px] font-black text-red-800 uppercase tracking-widest">Sesi Admin Aktif</p>
+                <p className="text-[10px] font-bold text-red-900/60 leading-tight mt-0.5">Pesan dibalas manual.</p>
+              </div>
+            </div>
+            <button 
+              onClick={handleEndSession} 
+              disabled={isEndingSession}
+              className="px-3 py-2 bg-white text-red-600 border border-red-200 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-red-500 hover:text-white transition-all shadow-sm flex items-center gap-1 flex-shrink-0 disabled:opacity-50"
+            >
+              <Power size={12} /> {isEndingSession ? '...' : 'Akhiri'}
+            </button>
+          </div>
+        )}
+
         {activeProduct && !isEscalated && (
           <div className="mb-4 bg-amber-50 p-3 rounded-2xl border border-amber-100 flex items-center justify-between group animate-in slide-in-from-bottom-2">
             <div className="flex items-center gap-3">

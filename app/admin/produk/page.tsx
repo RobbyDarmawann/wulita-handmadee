@@ -1,8 +1,10 @@
+// FILE: app/admin/produk/page.tsx
 import prisma from "@/lib/prisma";
 import Link from "next/link";
 import Image from "next/image";
-import { Plus, Search, Package, Edit3, Tag, Filter, ChevronDown, PackageOpen } from "lucide-react";
+import { Plus, Package, Edit3, Tag, PackageOpen } from "lucide-react";
 import DeleteProductButton from "./DeleteProductButton";
+import ProductFilter from "./ProductFilter"; // KITA PANGGIL KOMPONEN FILTER BARU DI SINI
 
 export const revalidate = 0;
 
@@ -11,7 +13,7 @@ export default async function AdminProduk({
 }: {
   searchParams: Promise<{ search?: string; category?: string; stock_status?: string }>;
 }) {
-  const { search, category, stock_status } = await searchParams;
+  const { search = "", category = "", stock_status = "" } = await searchParams;
 
   // Filter Query
   const where: any = {
@@ -33,10 +35,6 @@ export default async function AdminProduk({
 
   const formatRp = (n: number) => new Intl.NumberFormat('id-ID').format(n);
 
-  // --- STYLING KHUSUS UNTUK TAMPILAN MEWAH ---
-  const inputStyle = "w-full px-5 py-3.5 bg-amber-50/30 border-2 border-amber-100/80 rounded-[1.25rem] text-sm font-bold text-amber-950 outline-none focus:border-amber-400 focus:ring-[4px] focus:ring-amber-500/10 transition-all shadow-inner placeholder:text-amber-900/40 appearance-none";
-  const labelStyle = "text-[10px] font-black text-amber-900/50 uppercase tracking-[0.2em] ml-2 mb-2 block";
-
   return (
     <div className="max-w-7xl mx-auto space-y-8 py-4 animate-in fade-in duration-500">
       
@@ -54,59 +52,15 @@ export default async function AdminProduk({
         </Link>
       </div>
 
-      {/* FILTER BOX MEWAH (TANPA STATE REACT) */}
-      <div className="bg-gradient-to-br from-amber-50/80 to-[#F3E5DC]/50 p-8 rounded-[2.5rem] shadow-xl shadow-amber-900/5 border-2 border-white relative z-20">
-        <form className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
-          
-          <div className="md:col-span-4 space-y-1.5">
-            <label className={labelStyle}>Pencarian Karya</label>
-            <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-900/40 group-focus-within:text-amber-600 transition-colors" size={18} />
-              <input name="search" defaultValue={search} placeholder="Ketik nama pusaka..." className={`${inputStyle} pl-12`} />
-            </div>
-          </div>
+      {/* FILTER BOX MEWAH (CLIENT COMPONENT) */}
+      <ProductFilter 
+        categories={categories} 
+        currentSearch={search} 
+        currentCategory={category} 
+        currentStock={stock_status} 
+      />
 
-          <div className="md:col-span-3 space-y-1.5">
-            <label className={labelStyle}>Kategori</label>
-            <div className="relative group">
-              {/* appearance-none untuk mematikan panah kaku bawaan browser */}
-              <select name="category" defaultValue={category} className={`${inputStyle} cursor-pointer pr-10 relative z-10 bg-transparent`}>
-                <option value="" className="text-gray-900 font-bold py-2">Semua Kategori</option>
-                {categories.map(c => <option key={c.id} value={c.id.toString()} className="text-gray-900 font-medium py-2">{c.name}</option>)}
-              </select>
-              {/* Ikon panah elegan untuk menutupi panah kaku */}
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-900/40 group-focus-within:text-amber-600 group-hover:text-amber-600 transition-colors pointer-events-none z-0">
-                 <ChevronDown size={18} />
-              </div>
-              {/* Latar belakang input semu */}
-              <div className="absolute inset-0 bg-white/50 rounded-[1.25rem] pointer-events-none -z-10"></div>
-            </div>
-          </div>
-
-          <div className="md:col-span-3 space-y-1.5">
-            <label className={labelStyle}>Status Palka</label>
-            <div className="relative group">
-              <select name="stock_status" defaultValue={stock_status} className={`${inputStyle} cursor-pointer pr-10 relative z-10 bg-transparent`}>
-                <option value="" className="text-gray-900 font-bold">Semua Status</option>
-                <option value="tersedia" className="text-green-700 font-bold">Tersedia</option>
-                <option value="habis" className="text-red-600 font-bold">Palka Kosong (Habis)</option>
-              </select>
-              <div className="absolute right-4 top-1/2 -translate-y-1/2 text-amber-900/40 group-focus-within:text-amber-600 group-hover:text-amber-600 transition-colors pointer-events-none z-0">
-                 <ChevronDown size={18} />
-              </div>
-              <div className="absolute inset-0 bg-white/50 rounded-[1.25rem] pointer-events-none -z-10"></div>
-            </div>
-          </div>
-
-          <div className="md:col-span-2">
-            <button type="submit" className="w-full bg-amber-100/80 text-amber-900 border-2 border-amber-200 py-3.5 rounded-[1.25rem] font-black text-xs uppercase tracking-widest hover:bg-amber-900 hover:text-white hover:border-amber-900 transition-all flex items-center justify-center gap-2 shadow-sm">
-              <Filter size={16} /> Saring
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* TABEL PRODUK ELEGAN */}
+      {/* TABEL PRODUK ELEGAN (SERVER COMPONENT) */}
       <div className="bg-white rounded-[2.5rem] border border-amber-100/50 shadow-xl shadow-amber-900/5 overflow-hidden relative z-10">
         <div className="overflow-x-auto custom-scrollbar">
           <table className="w-full text-left border-collapse">
@@ -130,19 +84,13 @@ export default async function AdminProduk({
                       <div className="flex items-center gap-5">
                         <div className="w-20 h-20 rounded-[1.25rem] bg-amber-50/50 relative overflow-hidden flex-shrink-0 border-2 border-amber-100 shadow-inner group-hover:border-amber-300 transition-colors flex items-center justify-center">
                           {validImageUrl ? (
-                            <Image 
-                              src={validImageUrl} 
-                              alt={p.name} 
-                              fill 
-                              unoptimized 
-                              className="object-cover transition-transform group-hover:scale-110 duration-700" 
-                            />
+                            <Image src={validImageUrl} alt={p.name} fill unoptimized className="object-cover transition-transform group-hover:scale-110 duration-700" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center text-amber-900/20 group-hover:text-amber-500 transition-colors">
                               <PackageOpen size={28} />
                             </div>
                           )}
-                          {p.discount_price > 0 && (
+                          {(p.discount_price ?? 0) > 0 && (
                             <div className="absolute top-0 right-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl z-10 shadow-lg tracking-widest uppercase">
                               PROMO
                             </div>
@@ -163,10 +111,10 @@ export default async function AdminProduk({
                     
                     <td className="px-8 py-6">
                       <div className="space-y-1">
-                        {p.discount_price > 0 ? (
+                        {(p.discount_price ?? 0) > 0 ? (
                           <>
                             <p className="text-[10px] text-amber-900/30 line-through decoration-red-500 font-bold">Rp {formatRp(p.price)}</p>
-                            <p className="font-black text-red-600 text-base drop-shadow-sm">Rp {formatRp(p.discount_price)}</p>
+                            <p className="font-black text-red-600 text-base drop-shadow-sm">Rp {formatRp(p.discount_price ?? 0)}</p>
                           </>
                         ) : (
                           <p className="font-black text-amber-950 text-base">Rp {formatRp(p.price)}</p>
@@ -187,7 +135,6 @@ export default async function AdminProduk({
                         >
                           <Edit3 size={18} />
                         </Link>
-                        {/* Tombol Hapus memanggil Client Component */}
                         <DeleteProductButton id={p.id} />
                       </div>
                     </td>
