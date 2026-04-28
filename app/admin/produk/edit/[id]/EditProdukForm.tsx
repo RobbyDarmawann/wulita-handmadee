@@ -60,7 +60,7 @@ export default function EditProdukForm({ product, categories }: any) {
   const labelStyle = "block text-[10px] font-black uppercase text-amber-900/50 ml-1 tracking-widest mb-2";
 
   return (
-    <form action={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+    <form action={handleSubmit} encType="multipart/form-data" className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
       
       <div className="lg:col-span-2 space-y-8">
         <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl shadow-amber-900/5 border border-amber-100/50">

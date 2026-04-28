@@ -54,6 +54,7 @@ export async function addCategory(formData: FormData) {
 
   revalidatePath("/admin/kategori");
   revalidatePath("/kategori");
+  revalidatePath("/admin/produk/tambah");
 }
 
 export async function updateCategory(id: number, formData: FormData) {
@@ -75,6 +76,7 @@ export async function updateCategory(id: number, formData: FormData) {
 
   revalidatePath("/admin/kategori");
   revalidatePath("/kategori");
+  revalidatePath("/admin/produk/tambah");
 }
 
 export async function deleteCategory(id: number) {

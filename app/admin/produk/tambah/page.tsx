@@ -3,6 +3,8 @@ import TambahProdukForm from "./TambahProdukForm";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
+export const revalidate = 0;
+
 export default async function TambahProdukPage() {
   // Ambil kategori untuk pilihan dropdown
   const categories = await prisma.category.findMany({

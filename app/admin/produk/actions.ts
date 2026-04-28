@@ -6,8 +6,8 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 
 // --- HELPER: SIMPAN GAMBAR KE FOLDER PUBLIC ---
-async function uploadImage(file: File, subFolder: string) {
-  if (!file || file.size === 0) return null;
+async function uploadImage(file: FormDataEntryValue | null, subFolder: string) {
+  if (!(file instanceof File) || file.size === 0) return null;
   
   try {
     const bytes = await file.arrayBuffer();
@@ -35,7 +35,7 @@ export async function addProduct(formData: FormData) {
   const price = parseInt(formData.get("price") as string) || 0;
   const discount_price = parseInt(formData.get("discount_price") as string) || 0;
   const categoryId = parseInt(formData.get("category_id") as string);
-  const mainImage = formData.get("image") as File;
+  const mainImage = formData.get("image");
   const slug = name.toLowerCase().replace(/\s+/g, '-');
 
   const mainImageUrl = await uploadImage(mainImage, "products");
@@ -65,7 +65,7 @@ export async function addProduct(formData: FormData) {
       for (const [_, v] of variantMap) {
         const vStock = parseInt(v.stock) || 0;
         calculatedTotalStock += vStock;
-        const vImageFile = v.image as File;
+        const vImageFile = v.image;
         const vImageUrl = await uploadImage(vImageFile, "variants");
 
         await tx.productVariant.create({
@@ -101,7 +101,7 @@ export async function updateProduct(id: number, formData: FormData) {
   const price = parseInt(formData.get("price") as string) || 0;
   const discount_price = parseInt(formData.get("discount_price") as string) || 0;
   const categoryId = parseInt(formData.get("category_id") as string);
-  const mainImage = formData.get("image") as File;
+  const mainImage = formData.get("image");
   const slug = name.toLowerCase().replace(/\s+/g, '-');
 
   const variantMap = new Map();
@@ -140,7 +140,7 @@ export async function updateProduct(id: number, formData: FormData) {
 
         const vStock = parseInt(v.stock) || 0;
         calculatedTotalStock += vStock;
-        const vImageFile = v.image as File;
+        const vImageFile = v.image;
         const vImageUrl = await uploadImage(vImageFile, "variants");
 
         if (variantId) {
