@@ -90,7 +90,7 @@ export default async function AdminProduk({
                               <PackageOpen size={28} />
                             </div>
                           )}
-                          {(p.discount_price ?? 0) > 0 && (
+                          {p.discount_price > 0 && (
                             <div className="absolute top-0 right-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl z-10 shadow-lg tracking-widest uppercase">
                               PROMO
                             </div>
@@ -111,10 +111,10 @@ export default async function AdminProduk({
                     
                     <td className="px-8 py-6">
                       <div className="space-y-1">
-                        {(p.discount_price ?? 0) > 0 ? (
+                        {p.discount_price > 0 ? (
                           <>
                             <p className="text-[10px] text-amber-900/30 line-through decoration-red-500 font-bold">Rp {formatRp(p.price)}</p>
-                            <p className="font-black text-red-600 text-base drop-shadow-sm">Rp {formatRp(p.discount_price ?? 0)}</p>
+                            <p className="font-black text-red-600 text-base drop-shadow-sm">Rp {formatRp(p.discount_price)}</p>
                           </>
                         ) : (
                           <p className="font-black text-amber-950 text-base">Rp {formatRp(p.price)}</p>

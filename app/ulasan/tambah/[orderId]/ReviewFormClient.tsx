@@ -19,7 +19,7 @@ export default function ReviewFormClient({ item, orderId, isReviewed }: any) {
     if (res.success) {
       setDone(true);
     } else {
-      addToast(res.error, "error");
+      alert(res.error);
     }
     setIsPending(false);
   };

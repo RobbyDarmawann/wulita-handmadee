@@ -2,46 +2,27 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { markAsRead, markAllAsRead } from "./actions";
 import { Bell, Package, Tag, Info, CheckCircle2, ChevronRight } from "lucide-react";
-import { useToast } from "@/context/ToastContext";
+import Link from "next/link";
 
 export default function NotifikasiClient({ initialNotifications }: { initialNotifications: any[] }) {
   const router = useRouter();
-  const { addToast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
 
   const unreadCount = initialNotifications.filter(n => !n.isRead).length;
 
   const handleMarkAllRead = async () => {
     setIsUpdating(true);
-    try {
-      const res = await fetch('/notifikasi/api', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'markAll' }),
-      });
-      if (!res.ok) throw new Error('Failed');
-      router.refresh();
-    } catch (err) {
-      alert('Gagal menandai semua notifikasi.');
-    } finally {
-      setIsUpdating(false);
-    }
+    await markAllAsRead();
+    setIsUpdating(false);
+    router.refresh();
   };
 
   const handleNotificationClick = async (id: number, link: string | null, isRead: boolean) => {
     if (!isRead) {
-      try {
-        const res = await fetch('/notifikasi/api', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'markAsRead', id }),
-        });
-        if (!res.ok) throw new Error('Failed');
-        router.refresh();
-      } catch (err) {
-        console.error(err);
-      }
+      await markAsRead(id);
+      router.refresh();
     }
     if (link) {
       router.push(link);

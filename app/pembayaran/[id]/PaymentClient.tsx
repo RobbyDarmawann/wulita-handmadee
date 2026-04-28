@@ -7,7 +7,6 @@ import { CheckCircle, Upload, Copy, Loader2, ArrowRight } from "lucide-react";
 
 export default function PaymentClient({ order }: { order: any }) {
   const router = useRouter();
-  const { addToast } = useToast();
   const [timeLeft, setTimeLeft] = useState("Menghitung...");
   const [isExpired, setIsExpired] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -43,7 +42,7 @@ export default function PaymentClient({ order }: { order: any }) {
     e.preventDefault();
     
     if (!file) {
-      addToast("Silakan pilih foto bukti transfer terlebih dahulu.", "warning"); // Alert error kecil boleh tetap ada
+      alert("Silakan pilih foto bukti transfer terlebih dahulu."); // Alert error kecil boleh tetap ada
       return;
     }
 
@@ -61,11 +60,11 @@ export default function PaymentClient({ order }: { order: any }) {
         setShowSuccessPopup(true);
         router.refresh(); 
       } else {
-        addToast(res.error || "Gagal mengunggah bukti pembayaran.", "error");
+        alert(res.error || "Gagal mengunggah bukti pembayaran.");
       }
     } catch (err) {
       console.error("Upload error:", err);
-      addToast("Terjadi kesalahan sistem atau gagal terhubung ke server.", "error");
+      alert("Terjadi kesalahan sistem atau gagal terhubung ke server.");
     } finally {
       setIsUploading(false);
     }
@@ -138,7 +137,7 @@ export default function PaymentClient({ order }: { order: any }) {
                 type="button" 
                 onClick={() => {
                   navigator.clipboard.writeText("8901234567");
-                  addToast("Nomor rekening tersalin!", "success");
+                  alert("Nomor rekening tersalin!");
                 }}
                 className="p-4 text-amber-700 hover:bg-amber-50 rounded-xl transition-colors border border-transparent hover:border-amber-200"
               >

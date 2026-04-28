@@ -1,7 +1,5 @@
 import { Poppins } from "next/font/google";
 import Navbar from "@/components/Navbar";
-import { ToastProvider } from "@/context/ToastContext";
-import { ToastContainer } from "@/components/ToastContainer";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -12,7 +10,6 @@ const poppins = Poppins({
 });
 
 // Client component untuk pathname logic
-import NavbarWrapper from "@/components/NavbarWrapper";
 
 export default function RootLayout({
   children,
@@ -22,11 +19,8 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${poppins.variable} font-sans antialiased`}>
-        <ToastProvider>
-          <NavbarWrapper />
-          <main>{children}</main>
-          <ToastContainer />
-        </ToastProvider>
+        <Navbar />
+        <main>{children}</main>
       </body>
     </html>
   );

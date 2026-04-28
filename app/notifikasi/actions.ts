@@ -9,7 +9,7 @@ export async function markAsRead(id: number) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  await prisma.Notification.updateMany({
+  await prisma.notification.updateMany({
     where: { id, userId: user.id },
     data: { isRead: true }
   });
@@ -22,7 +22,7 @@ export async function markAllAsRead() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  await prisma.Notification.updateMany({
+  await prisma.notification.updateMany({
     where: { userId: user.id, isRead: false },
     data: { isRead: true }
   });

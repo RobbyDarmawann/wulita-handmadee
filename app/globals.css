@@ -1,9 +1,10 @@
 @import "tailwindcss";
 
-/* 1. SETUP FONT POPPINS */
+/* Global font: gunakan variable yang disediakan next/font/google */
 :root {
-  --font-poppins: "Poppins", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
-  --font-sans: var(--font-poppins);
+  /* Poppins akan di-define oleh next/font dengan nama variable "--font-poppins" */
+  /* Fallback generic fonts disertakan untuk safety */
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
 }
 
 /* 2. WARNA KHUSUS WULITA HANDMADE */
@@ -24,26 +25,9 @@
   }
 }
 
-/* 3. PENGATURAN DASAR - SEMUA ELEMEN GUNAKAN POPPINS */
-html {
-  font-family: var(--font-poppins);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
+/* 3. PENGATURAN DASAR BODY */
 body {
   background-color: var(--wulita-bg);
   color: var(--wulita-dark);
-  font-family: var(--font-poppins);
-  @apply font-sans;
-}
-
-/* Pastikan semua element text gunakan Poppins */
-* {
-  font-family: inherit;
-}
-
-/* Override font pada heading, paragraph, dan elemen text lainnya */
-h1, h2, h3, h4, h5, h6, p, span, div, button, input, textarea, select, label {
-  font-family: var(--font-poppins);
+  font-family: var(--font-sans);
 }

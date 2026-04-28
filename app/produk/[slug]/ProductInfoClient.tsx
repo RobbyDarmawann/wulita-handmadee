@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useToast } from '@/context/ToastContext';
 import { 
   ShoppingCart, Star, ChevronRight, Heart, 
   ShieldCheck, ArrowLeft, Truck, Package, MessageSquare, User, Edit3,
@@ -14,7 +13,6 @@ import { addToCart } from '@/app/keranjang/actions';
 
 export default function ProductDetailClient({ product, userId }: { product: any, userId: string | null }) {
   const router = useRouter();
-  const { addToast } = useToast();
   
   // --- STATE ---
   const [isPending, setIsPending] = useState(false);
@@ -35,7 +33,7 @@ export default function ProductDetailClient({ product, userId }: { product: any,
   );
 
   // Perhitungan Harga Dinamis
-  const basePrice = (product.discount_price ?? 0) > 0 ? product.discount_price : product.price;
+  const basePrice = product.discount_price > 0 ? product.discount_price : product.price;
   const currentPrice = selectedVariant 
     ? (selectedVariant.price > 0 ? selectedVariant.price : basePrice)
     : basePrice;
@@ -80,13 +78,13 @@ export default function ProductDetailClient({ product, userId }: { product: any,
   // --- FUNGSI UTAMA: TAMBAH KE KERANJANG ---
   const handleAddToCart = async () => {
     if (!userId) {
-      addToast("Silakan login terlebih dahulu untuk memasukkan barang ke palka!", "warning");
+      alert("Silakan login terlebih dahulu untuk memasukkan barang ke palka!");
       router.push('/login');
       return;
     }
 
     if (currentStock === 0) {
-      addToast("Maaf, stok untuk varian ini sedang kosong.", "error");
+      alert("Maaf, stok untuk varian ini sedang kosong.");
       return;
     }
 
@@ -100,13 +98,14 @@ export default function ProductDetailClient({ product, userId }: { product: any,
     try {
       const result = await addToCart(formData);
       if (result.success) {
-        addToast("✓ Berhasil masuk palka! Pesanan siap berlayar.", "success");
+        setShowToast(true);
         router.refresh(); 
+        setTimeout(() => setShowToast(false), 4000);
       } else {
-        addToast(result.error || "Gagal memasukkan barang.", "error");
+        alert(result.error || "Gagal memasukkan barang.");
       }
     } catch (error) {
-      addToast("Terjadi kesalahan sistem.", "error");
+      alert("Terjadi kesalahan sistem.");
     } finally {
       setIsPending(false);
     }
@@ -172,7 +171,7 @@ export default function ProductDetailClient({ product, userId }: { product: any,
                 ) : (
                   <Package size={64} className="text-gray-200" />
                 )}
-                {(product.discount_price ?? 0) > 0 && (
+                {product.discount_price > 0 && (
                   <div className="absolute top-4 left-4 md:top-6 md:left-6 bg-red-500 text-white font-black text-xs md:text-sm px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-lg z-10">PROMO</div>
                 )}
               </div>
@@ -324,24 +323,20 @@ export default function ProductDetailClient({ product, userId }: { product: any,
                           <p className="text-gray-600 text-xs md:text-sm sm:pl-14 md:pl-16 italic font-medium leading-relaxed mt-2 sm:mt-0">"{review.comment}"</p>
 
                           {/* Foto dari Pelanggan */}
-                          {(() => {
-                            const reviewImg = getImagePath(review.image);
-                            if (!reviewImg) return null;
-                            return (
-                              <div className="mt-3 md:mt-4 sm:ml-14 md:ml-16">
-                                <a href={reviewImg} target="_blank" rel="noreferrer" className="inline-block relative group/img overflow-hidden rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
-                                  <img 
-                                    src={reviewImg} 
-                                    alt="Bukti Produk" 
-                                    className="w-20 h-20 md:w-32 md:h-32 object-cover group-hover/img:scale-110 transition-transform duration-500" 
-                                  />
-                                  <div className="absolute inset-0 bg-black/10 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                    <ImageIcon className="text-white" size={20} />
-                                  </div>
-                                </a>
-                              </div>
-                            );
-                          })()}
+                          {review.image && (
+                            <div className="mt-3 md:mt-4 sm:ml-14 md:ml-16">
+                              <a href={getImagePath(review.image)} target="_blank" rel="noreferrer" className="inline-block relative group/img overflow-hidden rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
+                                <img 
+                                  src={getImagePath(review.image)} 
+                                  alt="Bukti Produk" 
+                                  className="w-20 h-20 md:w-32 md:h-32 object-cover group-hover/img:scale-110 transition-transform duration-500" 
+                                />
+                                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
+                                  <ImageIcon className="text-white" size={20} />
+                                </div>
+                              </a>
+                            </div>
+                          )}
 
                           {/* BALASAN ADMIN */}
                           {review.admin_reply && (
