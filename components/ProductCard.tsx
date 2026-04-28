@@ -18,7 +18,7 @@ export default function ProductCard({ product }: { product: Product }) {
   // Cek apakah produk sedang promo (punya discount_price yang lebih dari 0)
   const isPromo = product.discount_price && product.discount_price > 0;
 
-  // Optimasi URL Gambar
+  // Optimasi URL Gambar agar terbaca dengan benar oleh komponen Next/Image
   const imageUrl = product.image && product.image.trim() !== "" 
     ? (product.image.startsWith('/') ? product.image : `/${product.image}`)
     : null;
@@ -72,7 +72,7 @@ export default function ProductCard({ product }: { product: Product }) {
           {product.name}
         </h3>
 
-        {/* --- BAGIAN HARGA YANG DITAMBAHKAN --- */}
+        {/* --- BAGIAN HARGA --- */}
         <div className="mt-auto mb-4">
           {isPromo ? (
             <div className="flex flex-col">
@@ -89,7 +89,7 @@ export default function ProductCard({ product }: { product: Product }) {
             </span>
           )}
         </div>
-        {/* ------------------------------------- */}
+        {/* ---------------------- */}
 
         {/* Footer Card: Stok & Tombol Keranjang */}
         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
@@ -104,7 +104,7 @@ export default function ProductCard({ product }: { product: Product }) {
                 : 'bg-amber-50 text-amber-900 group-hover:bg-amber-950 group-hover:text-white'
             }`}
           >
-            {/* Ikon Keranjang */}
+            {/* Ikon Keranjang (Raw SVG) */}
             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>

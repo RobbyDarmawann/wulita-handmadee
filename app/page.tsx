@@ -13,9 +13,8 @@ export default async function Home({
 }) {
   const { cari, kategori } = await searchParams;
 
-  const [categories, products] = await Promise.all([
+  const [categories, productsRaw] = await Promise.all([
     prisma.category.findMany({
-      // SEKARANG KITA AMBIL JUGA FIELD IMAGE-NYA
       select: { id: true, name: true, slug: true, image: true }, 
       orderBy: { name: 'asc' }
     }),
@@ -29,15 +28,24 @@ export default async function Home({
           kategori ? { category: { slug: kategori } } : {},
         ]
       },
-      orderBy: { createdAt: 'desc' },
-      take: 8 
+      orderBy: { createdAt: 'desc' }, // Ambil yang terbaru dulu
+      take: 20 // Ambil stok lebih banyak untuk di-sort
     })
   ]);
+
+  // LOGIKA SORTING: Produk Promo Paling Atas
+  const sortedProducts = [...productsRaw].sort((a, b) => {
+    const aPromo = a.discount_price && a.discount_price > 0 ? 1 : 0;
+    const bPromo = b.discount_price && b.discount_price > 0 ? 1 : 0;
+    
+    // Jika B promo dan A tidak, B naik ke atas
+    return bPromo - aPromo;
+  }).slice(0, 8); // Tetap tampilkan 8 produk saja di landing page
 
   return (
     <HomeClient 
       initialCategories={categories} 
-      initialProducts={products} 
+      initialProducts={sortedProducts} 
       currentSearch={cari}
       currentCategory={kategori}
     />
