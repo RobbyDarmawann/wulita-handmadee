@@ -71,6 +71,7 @@ model User {
   messages Message[]
   orders   Order[]
   reviews  Review[]
+  notifications Notification[]
 }
 
 model Review {
@@ -179,4 +180,18 @@ model Message {
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("messages")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String   // Contoh: "Pesanan Dikirim!"
+  message   String   // Contoh: "Pesanan #ORD-123 sedang menuju lokasimu."
+  type      String   @default("info") // Bisa berisi: 'order', 'promo', 'system'
+  isRead    Boolean  @default(false)
+  link      String?  // Link opsional, misal: "/pesanan/123"
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }

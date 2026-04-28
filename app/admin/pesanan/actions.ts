@@ -9,39 +9,26 @@ import { revalidatePath } from "next/cache";
 // ==============================================================
 async function sendWhatsApp(targetRaw: string, message: string) {
   const token = process.env.FONNTE_TOKEN;
-  
-  if (!token) {
-    console.warn("[WA SYSTEM] Peringatan: FONNTE_TOKEN belum diisi di file .env");
-    return;
-  }
+  if (!token) return;
 
-  // PEMBERSIH NOMOR (Sangat Penting untuk Fonnte!)
-  // Hilangkan semua karakter kecuali angka
   let target = targetRaw.replace(/\D/g, ''); 
-  // Jika diawali 0, ganti jadi 62
-  if (target.startsWith('0')) {
-    target = '62' + target.substring(1);
-  }
-  // Jika diawali 62 tapi kurang dari 10 digit, kemungkinan salah ketik
+  if (target.startsWith('0')) target = '62' + target.substring(1);
   if (target.length < 10) return;
 
   try {
     const response = await fetch("https://api.fonnte.com/send", {
       method: "POST",
-      headers: {
-        "Authorization": token,
-      },
+      headers: { "Authorization": token },
       body: new URLSearchParams({
         target: target,
         message: message,
-        // Kita tidak pakai countryCode lagi karena nomor sudah diseragamkan jadi '62' di atas
+        delay: "3", // 🔥 TAMBAHAN BARU: Jeda 3 detik agar terlihat natural (mengetik)
       }),
     });
-    
     const result = await response.json();
     console.log(`[WA SYSTEM] Respon Fonnte:`, result);
   } catch (error) {
-    console.error("[WA SYSTEM] ❌ Gagal mengirim pesan WA:", error);
+    console.error("[WA SYSTEM] ❌ Gagal mengirim WA:", error);
   }
 }
 
@@ -146,10 +133,56 @@ export async function updateOrderStatus(orderId: number, newStatus: string) {
       sendWhatsApp(targetNumber, waMessage); 
     }
 
+    // ==============================================================
+    // 3. CREATE NOTIFICATION FOR CUSTOMER
+    // ==============================================================
+    if (updatedOrder.userId) {
+      let notifTitle = "";
+      let notifMessage = "";
+      let notifType = "order";
+
+      if (cleanStatus === "dibayar") {
+        notifTitle = "Pembayaran Diterima ✓";
+        notifMessage = `Pembayaran untuk pesanan #ORD-${orderId} sudah kami terima. Maha karya Anda sedang disiapkan.`;
+      } 
+      else if (cleanStatus === "sedang_dikirim") {
+        notifTitle = "Pesanan Dalam Pengiriman 📦";
+        notifMessage = `Pesanan #ORD-${orderId} sedang dalam perjalanan menuju lokasi Anda.`;
+      } 
+      else if (cleanStatus === "siap_diambil") {
+        notifTitle = "Pesanan Siap Diambil 🎁";
+        notifMessage = `Pesanan #ORD-${orderId} sudah siap untuk diambil di Pangkalan Wulita.`;
+      } 
+      else if (cleanStatus.includes("selesai")) {
+        notifTitle = "Pesanan Selesai 💖";
+        const pointMsg = pointsGivenForWA > 0 ? ` Anda mendapat +${pointsGivenForWA} Poin Rewards!` : "";
+        notifMessage = `Pesanan #ORD-${orderId} telah selesai.${pointMsg}`;
+      } 
+      else if (cleanStatus === "pembayaran ditolak" || cleanStatus === "dibatalkan") {
+        notifTitle = "Pesanan Dibatalkan";
+        notifMessage = `Pesanan #ORD-${orderId} terpaksa dibatalkan. Hubungi admin untuk info lebih lanjut.`;
+        notifType = "info";
+      }
+
+      if (notifTitle) {
+        await prisma.Notification.create({
+          data: {
+            userId: updatedOrder.userId,
+            title: notifTitle,
+            message: notifMessage,
+            type: notifType,
+            link: `/pesanan`, // Link ke halaman pesanan customer
+            isRead: false,
+          }
+        });
+      }
+    }
+
     revalidatePath("/admin/pesanan");
     revalidatePath(`/admin/pesanan/${orderId}`);
     revalidatePath("/katalog"); 
     revalidatePath("/", "layout"); 
+    revalidatePath("/notifikasi"); // Revalidate notifikasi page
     
     return { success: true };
   } catch (error: any) {

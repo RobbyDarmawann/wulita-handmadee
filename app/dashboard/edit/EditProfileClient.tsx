@@ -8,6 +8,7 @@ import { ArrowLeft, Save, Loader2 } from "lucide-react";
 
 export default function EditProfileClient({ user }: { user: any }) {
   const router = useRouter();
+  const { addToast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
 
   // KUNCI PERBAIKAN: Mengikat data ke State agar otomatis terisi dan bisa diedit
@@ -28,11 +29,11 @@ export default function EditProfileClient({ user }: { user: any }) {
     const res = await updateProfile(formData);
     
     if (res.success) {
-      alert("Profil berhasil diperbarui!");
+      addToast("✓ Profil berhasil diperbarui!", "success");
       router.push("/dashboard");
       router.refresh(); // Memaksa update data terbaru
     } else {
-      alert(res.error);
+      addToast(res.error, "error");
     }
     setIsSaving(false);
   };

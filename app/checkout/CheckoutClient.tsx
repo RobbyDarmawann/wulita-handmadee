@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useToast } from "@/context/ToastContext";
 import { processCheckout } from "./actions"; 
 import { Loader2, Coins, ChevronDown, Sparkles, Check } from "lucide-react";
 
@@ -16,6 +17,7 @@ type CartItem = {
 
 export default function CheckoutClient({ cartItems = [], user }: { cartItems: CartItem[], user: any }) {
   const router = useRouter();
+  const { addToast } = useToast();
   
   const [deliveryOption, setDeliveryOption] = useState("diantar");
   const [paymentMethod, setPaymentMethod] = useState("");
@@ -50,7 +52,7 @@ export default function CheckoutClient({ cartItems = [], user }: { cartItems: Ca
 
   const handleSubmit = async (formData: FormData) => {
     if (!paymentMethod) {
-      alert("Pilih metode pembayaran terlebih dahulu, Kapten!");
+      addToast("Pilih metode pembayaran terlebih dahulu, Kapten!", "warning");
       return;
     }
 
@@ -67,11 +69,11 @@ export default function CheckoutClient({ cartItems = [], user }: { cartItems: Ca
       if (res.success) {
         router.push(`/pembayaran/${res.orderId}`); 
       } else {
-        alert(res.error || "Terjadi kesalahan saat memproses pesanan.");
+        addToast(res.error || "Terjadi kesalahan saat memproses pesanan.", "error");
         setIsPending(false);
       }
     } catch (error) {
-      alert("Sistem gagal merespon. Coba lagi.");
+      addToast("Sistem gagal merespon. Coba lagi.", "error");
       setIsPending(false);
     }
   };

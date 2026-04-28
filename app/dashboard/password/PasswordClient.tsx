@@ -8,6 +8,7 @@ import { ArrowLeft, ShieldCheck, Loader2 } from "lucide-react";
 
 export default function PasswordClient() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -18,10 +19,10 @@ export default function PasswordClient() {
     const res = await updatePassword(formData);
     
     if (res.success) {
-      alert("Password berhasil diperbarui! Silakan gunakan password baru untuk login selanjutnya.");
+      addToast("✓ Password berhasil diperbarui! Silakan gunakan password baru untuk login.", "success");
       router.push("/dashboard");
     } else {
-      alert(res.error);
+      addToast(res.error, "error");
     }
     setIsUpdating(false);
   };

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingCart, MessageSquare, LogOut, Menu, X } from 'lucide-react';
+import { ShoppingCart, MessageSquare, LogOut, Menu, X, Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -16,10 +16,11 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [userName, setUserName] = useState('Pengguna');
 
-  // State untuk Mobile Menu & Notifikasi Dinamis
+  // State untuk Mobile Menu & Angka Merah Dinamis
   const [isOpen, setIsOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [unreadChat, setUnreadChat] = useState(0);
+  const [unreadNotif, setUnreadNotif] = useState(0); // STATE BARU: Notifikasi
 
   useEffect(() => {
     const checkUser = async () => {
@@ -51,19 +52,19 @@ export default function Navbar() {
       setIsAdmin(false);
       setCartCount(0);
       setUnreadChat(0);
+      setUnreadNotif(0); // Reset notifikasi saat logout
     }
   };
 
-  // Fungsi fetch data dinamis (Sesuaikan nama tabel dengan skema Prisma Kapten)
   const fetchDynamicCounts = async (userId: string) => {
     try {
       // 1. Hitung isi keranjang
       const { count: cart } = await supabase
-        .from('carts') // Ganti dengan 'cart_items' jika nama tabel di DB berbeda
+        .from('carts') 
         .select('*', { count: 'exact', head: true })
         .eq('user_id', userId);
 
-      // 2. Hitung pesan chat yang belum dibaca dari Admin/Bot
+      // 2. Hitung pesan chat belum dibaca
       const { count: chat } = await supabase
         .from('messages') 
         .select('*', { count: 'exact', head: true })
@@ -71,8 +72,17 @@ export default function Navbar() {
         .eq('is_read', false)
         .neq('sender', 'user');
 
+      // 3. Hitung NOTIFIKASI belum dibaca (TABEL BARU)
+      // Asumsi: tabel bernama 'notifications' atau sesuaikan dengan schema Prisma Kapten
+      const { count: notif } = await supabase
+        .from('notifications') 
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+        .eq('is_read', false);
+
       setCartCount(cart || 0);
       setUnreadChat(chat || 0);
+      setUnreadNotif(notif || 0);
     } catch (error) {
       console.error("Gagal mengambil notifikasi:", error);
     }
@@ -80,12 +90,11 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    setIsOpen(false); // Tutup menu mobile saat logout
+    setIsOpen(false); 
     router.push('/login');
     router.refresh();
   };
 
-  // Fungsi toggle burger menu
   const toggleMenu = () => setIsOpen(!isOpen);
 
   return (
@@ -93,7 +102,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           
-          {/* Logo Section (Tetap Sama) */}
+          {/* Logo Section */}
           <div className="flex items-center gap-3">
             <img 
               src="/images/logo.png" 
@@ -105,59 +114,88 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* TAMPILAN MOBILE (Keranjang Cepat & Tombol Burger) */}
-          <div className="flex md:hidden items-center gap-4">
+          {/* TAMPILAN MOBILE (Lonceng, Keranjang, Burger) */}
+          <div className="flex md:hidden items-center gap-3">
             {isAuth && !isAdmin && (
-              <Link href="/keranjang" className="relative p-2 text-gray-600 hover:text-amber-700 transition-colors">
-                <ShoppingCart size={24} strokeWidth={1.5} />
-                {cartCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border border-white transform translate-x-1 -translate-y-1 shadow-sm">
-                    {cartCount}
-                  </span>
-                )}
-              </Link>
+              <>
+                {/* Ikon Lonceng Mobile */}
+                <Link href="/notifikasi" className="relative p-2 text-gray-600 hover:text-amber-700 transition-colors">
+                  <Bell size={24} strokeWidth={1.5} />
+                  {unreadNotif > 0 && (
+                    <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full border border-white transform translate-x-0.5 -translate-y-0.5 shadow-sm animate-pulse">
+                      {unreadNotif > 9 ? '9+' : unreadNotif}
+                    </span>
+                  )}
+                </Link>
+
+                {/* Ikon Keranjang Mobile */}
+                <Link href="/keranjang" className="relative p-2 text-gray-600 hover:text-amber-700 transition-colors">
+                  <ShoppingCart size={24} strokeWidth={1.5} />
+                  {cartCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold h-4 w-4 flex items-center justify-center rounded-full border border-white transform translate-x-0.5 -translate-y-0.5 shadow-sm">
+                      {cartCount}
+                    </span>
+                  )}
+                </Link>
+              </>
             )}
             <button 
               onClick={toggleMenu} 
-              className="text-gray-700 hover:text-amber-700 focus:outline-none p-2 rounded-lg bg-gray-50 active:scale-95 transition-transform"
+              className="text-gray-700 hover:text-amber-700 focus:outline-none p-2 rounded-lg bg-gray-50 active:scale-95 transition-transform ml-1"
             >
               {isOpen ? <X size={26} /> : <Menu size={26} />}
             </button>
           </div>
 
-          {/* Menu Navigasi Desktop (Disembunyikan di Mobile dengan `hidden md:flex`) */}
+          {/* Menu Navigasi Desktop */}
           <div className="hidden md:flex items-center space-x-8">
             <Link href="/katalog" className={`font-medium transition ${pathname === '/katalog' ? 'text-amber-700 font-bold' : 'text-gray-600 hover:text-amber-700'}`}>Katalog</Link>
             <Link href="/kategori" className={`font-medium transition ${pathname === '/kategori' ? 'text-amber-700 font-bold' : 'text-gray-600 hover:text-amber-700'}`}>Kategori</Link>
             <Link href="/tentang" className="text-gray-600 hover:text-amber-700 font-medium transition">Tentang Kami</Link>
             
             {isAuth && !isAdmin && (
-              <Link href="/pesanan" className="text-amber-700 font-bold hover:text-amber-900 transition underline decoration-2 underline-offset-8">
+              <Link href="/pesanan" className={`font-medium transition ${pathname === '/pesanan' ? 'text-amber-700 font-bold underline decoration-2 underline-offset-8' : 'text-gray-600 hover:text-amber-700'}`}>
                 Pesanan Saya
               </Link>
             )}
 
-            {/* Menu Kanan Desktop (Auth/Cart/Chat) */}
+            {/* Menu Kanan Desktop (Auth/Notif/Chat/Cart) */}
             <div className="pl-4 border-l border-gray-200 flex items-center space-x-4">
               {isAuth ? (
                 <>
-                  <Link href="/chat" className="relative p-2 text-gray-600 hover:text-amber-700 transition-colors">
-                    <MessageSquare size={24} strokeWidth={1.5} />
-                    {unreadChat > 0 && (
-                      <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border border-white transform translate-x-1 -translate-y-1 shadow-sm">
-                        {unreadChat}
-                      </span>
-                    )}
-                  </Link>
+                  {!isAdmin && (
+                    <>
+                      {/* Ikon Lonceng (Baru) */}
+                      <Link href="/notifikasi" className="relative p-2 text-gray-600 hover:text-amber-700 transition-colors group">
+                        <Bell size={24} strokeWidth={1.5} className="group-hover:origin-top group-hover:animate-swing" />
+                        {unreadNotif > 0 && (
+                          <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border border-white transform translate-x-1 -translate-y-1 shadow-sm animate-pulse">
+                            {unreadNotif > 9 ? '9+' : unreadNotif}
+                          </span>
+                        )}
+                      </Link>
 
-                  <Link href="/keranjang" className="relative p-2 text-gray-600 hover:text-amber-700 transition-colors">
-                    <ShoppingCart size={24} strokeWidth={1.5} />
-                    {cartCount > 0 && (
-                      <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border border-white transform translate-x-1 -translate-y-1 shadow-sm">
-                        {cartCount}
-                      </span>
-                    )}
-                  </Link>
+                      {/* Ikon Chat */}
+                      <Link href="/chat" className="relative p-2 text-gray-600 hover:text-amber-700 transition-colors">
+                        <MessageSquare size={24} strokeWidth={1.5} />
+                        {unreadChat > 0 && (
+                          <span className="absolute top-0 right-0 bg-red-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border border-white transform translate-x-1 -translate-y-1 shadow-sm">
+                            {unreadChat > 9 ? '9+' : unreadChat}
+                          </span>
+                        )}
+                      </Link>
+
+                      {/* Ikon Keranjang */}
+                      <Link href="/keranjang" className="relative p-2 text-gray-600 hover:text-amber-700 transition-colors">
+                        <ShoppingCart size={24} strokeWidth={1.5} />
+                        {cartCount > 0 && (
+                          <span className="absolute top-0 right-0 bg-amber-500 text-white text-[10px] font-bold h-5 w-5 flex items-center justify-center rounded-full border border-white transform translate-x-1 -translate-y-1 shadow-sm">
+                            {cartCount}
+                          </span>
+                        )}
+                      </Link>
+                    </>
+                  )}
 
                   <div className="flex items-center gap-2 ml-2 border-l border-gray-100 pl-4">
                     <Link href={isAdmin ? '/admin/dashboard' : '/dashboard'} className="text-amber-700 font-bold hover:text-amber-800 transition">
@@ -194,12 +232,21 @@ export default function Navbar() {
           {isAuth ? (
             <>
               {!isAdmin && (
-                <Link href="/pesanan" onClick={() => setIsOpen(false)} className="font-bold text-amber-700 py-3 border-b border-gray-50">Pesanan Saya</Link>
+                <>
+                  <Link href="/pesanan" onClick={() => setIsOpen(false)} className="font-bold text-amber-700 py-3 border-b border-gray-50">Pesanan Saya</Link>
+                  
+                  {/* Menu Notifikasi Mobile */}
+                  <Link href="/notifikasi" onClick={() => setIsOpen(false)} className="flex justify-between items-center font-medium text-gray-600 py-3 border-b border-gray-50">
+                    <span className="flex items-center gap-2"><Bell size={18}/> Notifikasi</span>
+                    {unreadNotif > 0 && <span className="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full animate-pulse">{unreadNotif} Baru</span>}
+                  </Link>
+                  
+                  <Link href="/chat" onClick={() => setIsOpen(false)} className="flex justify-between items-center font-medium text-gray-600 py-3 border-b border-gray-50">
+                    <span className="flex items-center gap-2"><MessageSquare size={18}/> Chat Support</span>
+                    {unreadChat > 0 && <span className="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full">{unreadChat} Baru</span>}
+                  </Link>
+                </>
               )}
-              <Link href="/chat" onClick={() => setIsOpen(false)} className="flex justify-between items-center font-medium text-gray-600 py-3 border-b border-gray-50">
-                Chat Support
-                {unreadChat > 0 && <span className="bg-red-500 text-white text-[10px] font-bold px-3 py-1 rounded-full">{unreadChat} Baru</span>}
-              </Link>
 
               <div className="pt-4 flex items-center justify-between">
                 <Link href={isAdmin ? '/admin/dashboard' : '/dashboard'} onClick={() => setIsOpen(false)} className="text-amber-700 font-bold">
