@@ -34,10 +34,6 @@ export async function middleware(request: NextRequest) {
   const isProtectedPath = ['/dashboard', '/keranjang', '/pesanan', '/chat'].some(p => path.startsWith(p))
   const isAuthPath = path.startsWith('/login') || path.startsWith('/register')
 
-  // =========================================================================
-  // 3. DETEKSI BERDASARKAN ROLE (Bukan Email!)
-  // =========================================================================
-  // Kita ambil 'role' dari metadata Supabase. Jika kosong, anggap sebagai 'user' (pelanggan).
   const userRole = user?.user_metadata?.role || 'user'
   const isAdmin = userRole === 'admin'
 

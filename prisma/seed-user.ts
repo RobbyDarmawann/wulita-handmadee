@@ -1,61 +1,75 @@
-// prisma/seed-user.ts
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client'
+import { createClient } from '@supabase/supabase-js'
 
-const prisma = new PrismaClient();
+const prisma = new PrismaClient()
+
+// Menggunakan Service Role Key untuk bypass sistem keamanan Supabase
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 async function main() {
-  // PAKAI EMAIL AKUN VIP
-  const testEmail = 'raja@wulita.com'; 
+  console.log('⚓ Memulai proses Seeding...')
 
-  console.log('⏳ Mengambil data dari Prisma & Menambahkan Transaksi...');
-  
-  const user = await prisma.user.findUnique({
-    where: { email: testEmail },
-  });
+  const emailAdmin = 'adminwulita@gmail.com'
+  const passwordAdmin = 'password123'
 
-  if (!user) {
-    console.error('❌ User tidak ditemukan! Pastikan sudah jalankan SQL VIP tadi.');
-    return;
+  // 1. BUAT AKUN DI SUPABASE AUTH
+  console.log('1. Membuat akun di Supabase Auth...')
+  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    email: emailAdmin,
+    password: passwordAdmin,
+    email_confirm: true, // Otomatis terkonfirmasi
+    user_metadata: {
+      name: 'Admin Wulita',
+      role: 'admin' // <-- KUNCI UTAMA AGAR DIBACA MIDDLEWARE SEBAGAI ADMIN
+    }
+  })
+
+  if (authError) {
+    if (authError.message.includes('already registered')) {
+      console.log('⚠️ Akun Supabase Auth sudah ada, lanjut ke sinkronisasi Prisma...')
+    } else {
+      console.error('❌ Gagal membuat akun Supabase:', authError.message)
+      return
+    }
+  } else {
+    console.log('✅ Akun Supabase Auth berhasil dibuat!')
   }
 
-  const product = await prisma.product.findFirst();
-  
-  if (product) {
-    console.log(`📦 Menambahkan transaksi untuk: ${user.name}`);
+  // Ambil ID user dari authData jika baru dibuat, atau cari secara manual jika sudah ada
+  let userId = authData?.user?.id
+  if (!userId) {
+    const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers()
+    const foundUser = existingUsers.users.find(u => u.email === emailAdmin)
+    userId = foundUser?.id
+  }
 
-    // Bersihkan data lama
-    await prisma.cart.deleteMany({ where: { userId: user.id } });
-    await prisma.orderItem.deleteMany({ where: { order: { userId: user.id } } });
-    await prisma.order.deleteMany({ where: { userId: user.id } });
-    await prisma.review.deleteMany({ where: { userId: user.id } });
-
-    // 1. Masukkan barang ke Keranjang
-    await prisma.cart.create({
-      data: { userId: user.id, productId: product.id, quantity: 2 }
-    });
-
-    // 2. Buatkan histori Order
-    await prisma.order.create({
-      data: {
-        userId: user.id,
-        recipient_name: user.name,
-        phone_number: user.phone_number || '081299998888',
-        address: user.address || 'Istana Gorontalo',
-        status: 'COMPLETED',
-        total_price: product.price * 2,
-        items: {
-          create: [{ productId: product.id, product_name: product.name, price: product.price, quantity: 2 }]
-        }
+  // 2. SINKRONISASI KE TABEL PUBLIC (PRISMA)
+  if (userId) {
+    console.log('2. Sinkronisasi data ke database Prisma...')
+    const user = await prisma.user.upsert({
+      where: { email: emailAdmin },
+      update: {
+        name: 'Admin Wulita',
+      },
+      create: {
+        id: userId, // Pastikan ID di public tabel SAMA PERSIS dengan ID Auth
+        email: emailAdmin,
+        name: 'Admin Wulita',
       }
-    });
-
-    // 3. Buatkan Review
-    await prisma.review.create({
-      data: { userId: user.id, productId: product.id, rating: 5, comment: 'Sangat memuaskan!' }
-    });
-
-    console.log('🎉 SEEDING TRANSAKSI SELESAI!');
+    })
+    console.log('✅ Akun Prisma berhasil disinkronkan!')
+    console.table([user])
   }
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+main()
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+  })
