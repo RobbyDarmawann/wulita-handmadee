@@ -4,11 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateProfile } from "./actions";
+import { useToast } from '@/context/ToastContext';
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 
 export default function EditProfileClient({ user }: { user: any }) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
+  const { addToast } = useToast();
 
   // KUNCI PERBAIKAN: Mengikat data ke State agar otomatis terisi dan bisa diedit
   const [inputName, setInputName] = useState(user?.name || "");
@@ -28,11 +30,11 @@ export default function EditProfileClient({ user }: { user: any }) {
     const res = await updateProfile(formData);
     
     if (res.success) {
-      alert("Profil berhasil diperbarui!");
+      addToast("Profil berhasil diperbarui!", "success");
       router.push("/dashboard");
       router.refresh(); // Memaksa update data terbaru
     } else {
-      alert(res.error);
+      addToast(res.error ?? "Gagal memperbarui profil.", "error");
     }
     setIsSaving(false);
   };

@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 
-async function saveImage(image: File) {
-  if (!image || image.size === 0) return null;
+async function saveImage(image: FormDataEntryValue | null) {
+  if (!(image instanceof File) || image.size === 0) return null;
 
   // Validasi ukuran file maksimal 10MB
   const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -39,7 +39,7 @@ async function saveImage(image: File) {
 
 export async function addCategory(formData: FormData) {
   const name = formData.get("name") as string;
-  const imageFile = formData.get("image") as File;
+  const imageFile = formData.get("image");
   const slug = name.toLowerCase().replace(/\s+/g, '-');
 
   const imageUrl = await saveImage(imageFile);
@@ -53,11 +53,12 @@ export async function addCategory(formData: FormData) {
   });
 
   revalidatePath("/admin/kategori");
+  revalidatePath("/kategori");
 }
 
 export async function updateCategory(id: number, formData: FormData) {
   const name = formData.get("name") as string;
-  const imageFile = formData.get("image") as File;
+  const imageFile = formData.get("image");
   const slug = name.toLowerCase().replace(/\s+/g, '-');
 
   const data: any = { name, slug };
@@ -73,6 +74,7 @@ export async function updateCategory(id: number, formData: FormData) {
   });
 
   revalidatePath("/admin/kategori");
+  revalidatePath("/kategori");
 }
 
 export async function deleteCategory(id: number) {

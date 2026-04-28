@@ -1,5 +1,6 @@
 import { Poppins } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import { ToastProvider, ToastContainer } from "@/context/ToastContext";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -19,8 +20,11 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={`${poppins.variable} font-sans antialiased`}>
-        <Navbar />
-        <main>{children}</main>
+        <ToastProvider>
+          <Navbar />
+          <main>{children}</main>
+          <ToastContainer />
+        </ToastProvider>
       </body>
     </html>
   );

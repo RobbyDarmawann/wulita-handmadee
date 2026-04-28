@@ -4,11 +4,13 @@ import { useState } from "react";
 import { Trash2, Save, RefreshCcw, ChevronDown, Check, Tags, Package, Info } from "lucide-react";
 import ImagePreview from "../../../ImagePreview";
 import { updateProduct } from "../../actions";
+import { useToast } from '@/context/ToastContext';
 import { useRouter } from "next/navigation";
 
 export default function EditProdukForm({ product, categories }: any) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const { addToast } = useToast();
   
   // STATE CUSTOM DROPDOWN KATEGORI
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -45,7 +47,7 @@ export default function EditProdukForm({ product, categories }: any) {
 
   const handleSubmit = async (formData: FormData) => {
     if (!selectedCategory) {
-      alert("Kategori wajib dipilih!");
+      addToast("Kategori wajib dipilih!", "warning");
       return;
     }
     setLoading(true);

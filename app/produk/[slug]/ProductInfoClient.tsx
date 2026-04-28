@@ -10,9 +10,11 @@ import {
   CheckCircle2, Loader2, ImageIcon
 } from 'lucide-react';
 import { addToCart } from '@/app/keranjang/actions';
+import { useToast } from '@/context/ToastContext';
 
 export default function ProductDetailClient({ product, userId }: { product: any, userId: string | null }) {
   const router = useRouter();
+  const { addToast } = useToast();
   
   // --- STATE ---
   const [isPending, setIsPending] = useState(false);
@@ -78,13 +80,13 @@ export default function ProductDetailClient({ product, userId }: { product: any,
   // --- FUNGSI UTAMA: TAMBAH KE KERANJANG ---
   const handleAddToCart = async () => {
     if (!userId) {
-      alert("Silakan login terlebih dahulu untuk memasukkan barang ke palka!");
+      addToast("Silakan login terlebih dahulu untuk memasukkan barang ke palka!", "warning");
       router.push('/login');
       return;
     }
 
     if (currentStock === 0) {
-      alert("Maaf, stok untuk varian ini sedang kosong.");
+      addToast("Maaf, stok untuk varian ini sedang kosong.", "error");
       return;
     }
 
@@ -102,10 +104,10 @@ export default function ProductDetailClient({ product, userId }: { product: any,
         router.refresh(); 
         setTimeout(() => setShowToast(false), 4000);
       } else {
-        alert(result.error || "Gagal memasukkan barang.");
+        addToast(result.error || "Gagal memasukkan barang.", "error");
       }
     } catch (error) {
-      alert("Terjadi kesalahan sistem.");
+      addToast("Terjadi kesalahan sistem.", "error");
     } finally {
       setIsPending(false);
     }

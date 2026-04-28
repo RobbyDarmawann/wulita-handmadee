@@ -4,11 +4,13 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updatePassword } from "./actions";
+import { useToast } from '@/context/ToastContext';
 import { ArrowLeft, ShieldCheck, Loader2 } from "lucide-react";
 
 export default function PasswordClient() {
   const router = useRouter();
   const [isUpdating, setIsUpdating] = useState(false);
+  const { addToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,10 +20,10 @@ export default function PasswordClient() {
     const res = await updatePassword(formData);
     
     if (res.success) {
-      alert("Password berhasil diperbarui! Silakan gunakan password baru untuk login selanjutnya.");
+      addToast("Password berhasil diperbarui! Silakan gunakan password baru untuk login selanjutnya.", "success");
       router.push("/dashboard");
     } else {
-      alert(res.error);
+      addToast(res.error ?? "Terjadi kesalahan sistem.", "error");
     }
     setIsUpdating(false);
   };

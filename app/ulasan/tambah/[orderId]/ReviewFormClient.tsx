@@ -2,11 +2,13 @@
 
 import { useState } from "react";
 import { submitReview } from "../../actions";
+import { useToast } from '@/context/ToastContext';
 import { Star, Upload, CheckCircle, Loader2 } from "lucide-react";
 
 export default function ReviewFormClient({ item, orderId, isReviewed }: any) {
   const [isPending, setIsPending] = useState(false);
   const [done, setDone] = useState(isReviewed);
+  const { addToast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -19,7 +21,7 @@ export default function ReviewFormClient({ item, orderId, isReviewed }: any) {
     if (res.success) {
       setDone(true);
     } else {
-      alert(res.error);
+      addToast(res.error ?? "Gagal mengirim ulasan.", "error");
     }
     setIsPending(false);
   };

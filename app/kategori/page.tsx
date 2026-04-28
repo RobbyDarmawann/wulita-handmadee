@@ -7,6 +7,8 @@ export const metadata = {
   title: "Kategori Produk - Wulita Handmade",
 };
 
+export const revalidate = 0;
+
 export default async function KategoriPage() {
   const categories = await prisma.category.findMany({
     include: {

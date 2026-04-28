@@ -5,10 +5,12 @@ import { useRouter } from "next/navigation";
 import { exportToExcel } from "./actions";
 // PERBAIKAN: Menambahkan 'Package' ke dalam import
 import { FileDown, TrendingUp, Users, ChevronDown, Check, Activity, Wallet, ShoppingBag, Package } from "lucide-react";
+import { useToast } from '@/context/ToastContext';
 
 export default function ReportsClient({ initialData, currentMonth, currentYear }: any) {
   const router = useRouter();
   const [isExporting, setIsExporting] = useState(false);
+  const { addToast } = useToast();
   const [sm, setSm] = useState(currentMonth);
   const [sy, setSy] = useState(currentYear);
 
@@ -42,7 +44,7 @@ export default function ReportsClient({ initialData, currentMonth, currentYear }
       const a = document.createElement("a");
       a.href = url; a.download = `Laporan_Wulita_${sm}_${sy}.xlsx`; a.click();
       setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-    } catch (e) { alert("Gagal export"); } finally { setIsExporting(false); }
+    } catch (e) { addToast("Gagal export", "error"); } finally { setIsExporting(false); }
   };
 
   return (

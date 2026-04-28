@@ -3,18 +3,20 @@
 import { useState } from "react";
 import { replyToReview, deleteReview } from "./actions";
 import { Star, MessageSquare, Trash2, CheckCircle, ExternalLink, ImageIcon, Loader2 } from "lucide-react";
+import { useToast } from '@/context/ToastContext';
 import Link from "next/link";
 
 export default function ReviewListClient({ initialReviews }: { initialReviews: any[] }) {
   const [loadingId, setLoadingId] = useState<number | null>(null);
   const [replies, setReplies] = useState<Record<number, string>>({});
+  const { addToast } = useToast();
 
   const handleReply = async (id: number) => {
-    if (!replies[id]) return alert("Tulis balasan dulu, Kapten!");
+    if (!replies[id]) return addToast("Tulis balasan dulu, Kapten!", "warning");
     
     setLoadingId(id);
     const res = await replyToReview(id, replies[id]);
-    if (!res.success) alert(res.error);
+    if (!res.success) addToast(res.error ?? "Gagal mengirim balasan.", "error");
     setLoadingId(null);
   };
 
@@ -23,7 +25,7 @@ export default function ReviewListClient({ initialReviews }: { initialReviews: a
     
     setLoadingId(id);
     const res = await deleteReview(id);
-    if (!res.success) alert(res.error);
+    if (!res.success) addToast(res.error ?? "Gagal menghapus ulasan.", "error");
     setLoadingId(null);
   };
 
