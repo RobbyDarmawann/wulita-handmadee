@@ -33,8 +33,6 @@ export default function LoginPage() {
       });
 
       if (authError) {
-        // Keamanan: Jangan beri tahu apakah email atau password yang salah secara spesifik
-        // Namun, beri tahu jika email belum dikonfirmasi (Masalah Kapten tadi)
         if (authError.message.includes("Email not confirmed")) {
           setError("Email Anda terdaftar tetapi belum dikonfirmasi. Silakan cek kotak masuk email Anda atau matikan fitur 'Confirm Email' di Dashboard Supabase.");
         } else {
@@ -42,9 +40,18 @@ export default function LoginPage() {
         }
         setLoading(false);
       } else if (data?.user) {
-        // Jika sukses
-        router.push('/');
-        router.refresh(); // Memaksa server memvalidasi session baru
+        // ========================================================
+        // KUNCI PERBAIKAN: CEK ROLE SEBELUM REDIRECT
+        // ========================================================
+        const userRole = data.user.user_metadata?.role || 'user';
+
+        if (userRole === 'admin') {
+          router.push('/admin/dashboard'); // Lempar Admin ke ruang kemudi
+        } else {
+          router.push('/'); // Lempar User biasa ke beranda
+        }
+        
+        router.refresh(); // Memaksa server memvalidasi session baru dan menjalankan middleware
       }
     } catch (err) {
       setError("Terjadi gangguan koneksi ke server. Silakan coba sesaat lagi.");
