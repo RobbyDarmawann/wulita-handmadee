@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { Poppins } from "next/font/google";
 import Navbar from "@/components/Navbar";
+import { ToastProvider, ToastContainer } from "@/context/ToastContext";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -10,6 +11,7 @@ const poppins = Poppins({
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"], // Ambil semua ketebalan
   variable: "--font-poppins", // Buat variabel CSS
 });
+
 export default function RootLayout({
   children,
 }: {
@@ -24,10 +26,13 @@ export default function RootLayout({
   return (
     <html lang="id" className={poppins.className}>
       <body className="antialiased">
-        {/* Tampilkan Navbar HANYA jika BUKAN halaman admin */}
-        {!isAdminPage && <Navbar />}
-        
-        <main>{children}</main>
+        <ToastProvider>
+          {/* Tampilkan Navbar HANYA jika BUKAN halaman admin */}
+          {!isAdminPage && <Navbar />}
+          
+          <main>{children}</main>
+          <ToastContainer />
+        </ToastProvider>
       </body>
     </html>
   );
