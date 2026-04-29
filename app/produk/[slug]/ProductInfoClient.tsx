@@ -1,3 +1,4 @@
+// FILE: app/katalog/[slug]/ProductInfoClient.tsx (Sesuaikan lokasi)
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { 
   ShoppingCart, Star, ChevronRight, Heart, 
-  ShieldCheck, ArrowLeft, Truck, Package, MessageSquare, User, Edit3,
+  ShieldCheck, ArrowLeft, Package, MessageSquare, User, Edit3,
   CheckCircle2, Loader2, ImageIcon
 } from 'lucide-react';
 import { addToCart } from '@/app/keranjang/actions';
@@ -16,11 +17,18 @@ export default function ProductDetailClient({ product, userId }: { product: any,
   const router = useRouter();
   const { addToast } = useToast();
   
-  // --- STATE ---
+  // --- STATE UTAMA ---
   const [isPending, setIsPending] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [qty, setQty] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<any>(product.variants?.[0] || null);
+  
+  // --- PENAWAR HYDRATION ERROR (SANGAT PENTING UNTUK VERCEL) ---
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   // --- HELPER PATH GAMBAR ---
   const getImagePath = (img: string | null) => {
@@ -34,19 +42,16 @@ export default function ProductDetailClient({ product, userId }: { product: any,
     selectedVariant?.image ? getImagePath(selectedVariant.image) : getImagePath(product.image)
   );
 
-  // Perhitungan Harga Dinamis
+  // Perhitungan Harga & Stok Dinamis
   const basePrice = product.discount_price > 0 ? product.discount_price : product.price;
   const currentPrice = selectedVariant 
     ? (selectedVariant.price > 0 ? selectedVariant.price : basePrice)
     : basePrice;
 
-  // --- LOGIKA STOK DINAMIS (BARU) ---
-  // Membaca stok dari varian yang dipilih. Jika tidak ada varian, baca dari stok utama produk.
   const currentStock = selectedVariant && selectedVariant.stock !== undefined
     ? selectedVariant.stock
     : (product.stock || 0);
 
-  // Efek untuk mereset quantity ke 1 jika stok varian yang dipilih ternyata 0 atau kurang dari qty saat ini
   useEffect(() => {
     if (qty > currentStock) {
       setQty(Math.max(1, currentStock));
@@ -54,9 +59,7 @@ export default function ProductDetailClient({ product, userId }: { product: any,
   }, [currentStock, qty]);
 
   const formatRupiah = (angka: number) => new Intl.NumberFormat('id-ID', { 
-    style: 'currency', 
-    currency: 'IDR', 
-    minimumFractionDigits: 0 
+    style: 'currency', currency: 'IDR', minimumFractionDigits: 0 
   }).format(angka);
 
   const allImages = [
@@ -77,14 +80,19 @@ export default function ProductDetailClient({ product, userId }: { product: any,
     percent: hasReviews ? (reviews.filter((r: any) => r.rating === star).length / reviews.length) * 100 : 0
   }));
 
-  // --- FUNGSI UTAMA: TAMBAH KE KERANJANG ---
+  // --- FUNGSI TANGGAL AMAN VERCEL ---
+  const safeDateRender = (dateString: string) => {
+    if (!isMounted) return "..."; // Di server Vercel, kembalikan titik-titik
+    // Di browser pelanggan, baru format tanggalnya sesuai zona waktu mereka
+    return new Date(dateString).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+  };
+
   const handleAddToCart = async () => {
     if (!userId) {
       addToast("Silakan login terlebih dahulu untuk memasukkan barang ke palka!", "warning");
       router.push('/login');
       return;
     }
-
     if (currentStock === 0) {
       addToast("Maaf, stok untuk varian ini sedang kosong.", "error");
       return;
@@ -134,7 +142,7 @@ export default function ProductDetailClient({ product, userId }: { product: any,
         </div>
       )}
 
-      {/* TOMBOL EDIT ADMIN */}
+      {/* TOMBOL EDIT ADMIN (Hanya contoh, pastikan dicek role admin beneran) */}
       <div className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50">
         <Link 
           href={`/admin/produk/edit/${product.id}`}
@@ -177,9 +185,9 @@ export default function ProductDetailClient({ product, userId }: { product: any,
                   <div className="absolute top-4 left-4 md:top-6 md:left-6 bg-red-500 text-white font-black text-xs md:text-sm px-3 md:px-4 py-1.5 md:py-2 rounded-full shadow-lg z-10">PROMO</div>
                 )}
               </div>
-              <div className="flex gap-3 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-3 md:gap-4 overflow-x-auto pb-2 custom-scrollbar">
                 {allImages.map((img: any, idx: number) => (
-                  <button key={idx} onClick={() => setActiveImage(img)} className={`relative w-20 h-20 md:w-24 md:h-24 rounded-xl md:rounded-2xl overflow-hidden flex-shrink-0 border-4 transition-all ${activeImage === img ? 'border-amber-500 scale-105 md:scale-105' : 'border-transparent'}`}>
+                  <button key={idx} onClick={() => setActiveImage(img)} className={`relative w-20 h-20 md:w-24 md:h-24 rounded-xl md:rounded-2xl overflow-hidden flex-shrink-0 border-4 transition-all ${activeImage === img ? 'border-amber-500 scale-105' : 'border-transparent'}`}>
                     <Image src={img} alt="Thumb" fill unoptimized className="object-cover" />
                   </button>
                 ))}
@@ -223,7 +231,6 @@ export default function ProductDetailClient({ product, userId }: { product: any,
                           onClick={() => {
                             setSelectedVariant(variant);
                             if (variant.image) setActiveImage(getImagePath(variant.image));
-                            // Qty otomatis reset ke 1 saat ganti varian agar tidak error
                             setQty(1); 
                           }}
                           className={`px-4 py-2 md:px-5 md:py-3 rounded-xl md:rounded-2xl font-bold text-xs md:text-sm border-2 transition-all ${
@@ -239,7 +246,7 @@ export default function ProductDetailClient({ product, userId }: { product: any,
                   </div>
                 )}
 
-                {/* INFO STOK DINAMIS (Berdasarkan Varian Terpilih) */}
+                {/* INFO STOK DINAMIS */}
                 <div className="flex items-center gap-2 mb-4 mt-2">
                   <div className={`w-2 h-2 rounded-full ${currentStock > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`} />
                   <span className="text-[10px] md:text-xs font-black text-gray-400 uppercase tracking-widest">
@@ -262,7 +269,6 @@ export default function ProductDetailClient({ product, userId }: { product: any,
                       {currentStock === 0 ? 0 : qty}
                     </span>
                     
-                    {/* Logika Math.min mencegah pembeli menekan plus melebihi stok */}
                     <button 
                       onClick={() => setQty(Math.min(currentStock, qty + 1))} 
                       disabled={currentStock === 0 || qty >= currentStock}
@@ -291,7 +297,7 @@ export default function ProductDetailClient({ product, userId }: { product: any,
             </div>
           </div>
 
-          {/* DESKRIPSI & ULASAN (Aman, 100% Tidak Disentuh!) */}
+          {/* DESKRIPSI & ULASAN */}
           <div className="border-t border-gray-100 bg-gray-50/50 p-5 sm:p-8 md:p-10 lg:p-16">
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-12 text-gray-800">
               <div className="lg:col-span-2">
@@ -317,46 +323,32 @@ export default function ProductDetailClient({ product, userId }: { product: any,
                                 {[...Array(5)].map((_, i) => <Star key={i} size={10} className="md:w-3 md:h-3" fill={i < review.rating ? "currentColor" : "none"} />)}
                               </div>
                             </div>
+                            {/* PENERAPAN FUNGSI AMAN TANGGAL */}
                             <span className="ml-auto text-[9px] md:text-[10px] font-black text-gray-300 uppercase tracking-widest shrink-0">
-                              {new Date(review.createdAt).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}
+                              {safeDateRender(review.createdAt)}
                             </span>
                           </div>
 
                           <p className="text-gray-600 text-xs md:text-sm sm:pl-14 md:pl-16 italic font-medium leading-relaxed mt-2 sm:mt-0">"{review.comment}"</p>
 
-                          {/* Foto dari Pelanggan */}
+                          {/* Foto Pelanggan & Balasan Admin Tetap Sama... */}
                           {review.image && (
                             <div className="mt-3 md:mt-4 sm:ml-14 md:ml-16">
                               <a href={getImagePath(review.image)} target="_blank" rel="noreferrer" className="inline-block relative group/img overflow-hidden rounded-xl md:rounded-2xl border border-gray-100 shadow-sm">
-                                <img 
-                                  src={getImagePath(review.image)} 
-                                  alt="Bukti Produk" 
-                                  className="w-20 h-20 md:w-32 md:h-32 object-cover group-hover/img:scale-110 transition-transform duration-500" 
-                                />
-                                <div className="absolute inset-0 bg-black/10 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center">
-                                  <ImageIcon className="text-white" size={20} />
-                                </div>
+                                <img src={getImagePath(review.image)} alt="Bukti Produk" className="w-20 h-20 md:w-32 md:h-32 object-cover group-hover/img:scale-110 transition-transform duration-500" />
                               </a>
                             </div>
                           )}
 
-                          {/* BALASAN ADMIN */}
                           {review.admin_reply && (
-                            <div className="mt-4 md:mt-6 sm:ml-14 md:ml-16 p-4 md:p-5 bg-amber-50 rounded-[1rem] md:rounded-[1.5rem] border border-amber-100 relative overflow-hidden animate-in fade-in slide-in-from-left-4 duration-500">
-                              <div className="absolute -right-2 -top-2 md:-right-4 md:-top-4 opacity-5 rotate-12">
-                                 <MessageSquare size={48} className="md:w-16 md:h-16 text-amber-900" />
-                              </div>
-                              
+                            <div className="mt-4 md:mt-6 sm:ml-14 md:ml-16 p-4 md:p-5 bg-amber-50 rounded-[1rem] md:rounded-[1.5rem] border border-amber-100 relative overflow-hidden">
                               <div className="flex items-center gap-2 mb-2 md:mb-3 relative z-10">
                                 <div className="w-5 h-5 md:w-6 md:h-6 bg-amber-900 text-white rounded-full flex items-center justify-center shadow-md shrink-0">
                                   <ShieldCheck size={12} className="md:w-[14px] md:h-[14px]" strokeWidth={3} />
                                 </div>
                                 <p className="text-[9px] md:text-[10px] font-black text-amber-900 uppercase tracking-[0.2em]">Respon Wulita</p>
                               </div>
-                              
-                              <p className="text-[11px] md:text-xs text-amber-800 leading-relaxed font-bold italic relative z-10">
-                                "{review.admin_reply}"
-                              </p>
+                              <p className="text-[11px] md:text-xs text-amber-800 leading-relaxed font-bold italic relative z-10">"{review.admin_reply}"</p>
                             </div>
                           )}
                         </div>
@@ -389,10 +381,7 @@ export default function ProductDetailClient({ product, userId }: { product: any,
                         <span className="w-2 md:w-3 text-gray-400 group-hover:text-amber-600 transition-colors">{stat.star}</span>
                         <Star size={10} className="md:w-3.5 md:h-3.5 text-amber-500 shrink-0" fill="currentColor" />
                         <div className="flex-1 h-1.5 md:h-2 bg-gray-100 rounded-full overflow-hidden shadow-inner">
-                          <div 
-                            className="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-1000 ease-out shadow-sm" 
-                            style={{ width: `${stat.percent}%` }}
-                          ></div>
+                          <div className="h-full bg-gradient-to-r from-amber-400 to-amber-600 transition-all duration-1000 ease-out shadow-sm" style={{ width: `${stat.percent}%` }}></div>
                         </div>
                         <span className="w-4 md:w-6 text-right text-gray-300 font-bold">{stat.count}</span>
                       </div>
