@@ -3,25 +3,36 @@ import Link from 'next/link';
 import AdminChart from '@/components/AdminChart';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 
-export const revalidate = 0;
+// Revalidate setiap 60 detik di production, disable caching di development
+// Ini penting untuk Vercel serverless: hindari setiap request hit database
+export const revalidate = process.env.NODE_ENV === 'production' ? 60 : 0;
 
 export default async function DashboardPage() {
-  // Ambil SEMUA data secara paralel biar koneksi database efisien & super cepat
+  // OPTIMASI: Batasi Promise.all hanya untuk critical data
+  // Sisanya fetch sequential atau cached untuk menghindari connection pool exhaustion
   const [
     totalOrdersCount,
     totalCustomers,
     pendingVerifications,
-    completedOrders,
-    recentOrders,
-    lowStockItems
+    completedOrders
   ] = await Promise.all([
     prisma.order.count(),
     prisma.user.count({ where: { role: 'customer' } }),
     prisma.order.count({ where: { status: { in: ['menunggu pembayaran', 'dibayar'] } } }),
-    prisma.order.findMany({ where: { status: 'pesanan selesai' } }), // Sesuaikan dengan status skema baru
-    prisma.order.findMany({ take: 5, orderBy: { createdAt: 'desc' } }),
-    prisma.product.findMany({ where: { stock: { lt: 5 } }, take: 5 })
+    prisma.order.findMany({ where: { status: 'pesanan selesai' } }) // Sesuaikan dengan status skema baru
   ]);
+
+  // OPTIMASI: Fetch non-critical data sequential (bukan concurrent)
+  // Ini lebih lambat tapi tidak membuka banyak koneksi sekaligus
+  const recentOrders = await prisma.order.findMany({ 
+    take: 5, 
+    orderBy: { createdAt: 'desc' } 
+  });
+  
+  const lowStockItems = await prisma.product.findMany({ 
+    where: { stock: { lt: 5 } }, 
+    take: 5 
+  });
 
   // Total Pendapatan dari pesanan selesai (Gunakan camelCase: totalPrice)
   const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);

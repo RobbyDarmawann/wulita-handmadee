@@ -7,7 +7,8 @@ import DeleteProductButton from "./DeleteProductButton";
 import ProductFilter from "./ProductFilter"; // KITA PANGGIL KOMPONEN FILTER BARU DI SINI
 import { resolveImageUrl } from "@/lib/image";
 
-export const revalidate = 0;
+// Cache halaman admin produk selama 60 detik untuk Vercel
+export const revalidate = process.env.NODE_ENV === 'production' ? 60 : 0;
 
 export default async function AdminProduk({
   searchParams,

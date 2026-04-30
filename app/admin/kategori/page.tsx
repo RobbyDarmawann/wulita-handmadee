@@ -7,8 +7,9 @@ import DeleteButton from "./DeleteButton";
 import ImagePreview from "../ImagePreview"; // Komponen preview yang kita buat
 import { resolveImageUrl } from "@/lib/image";
 
-// Memastikan data selalu fresh dari database setiap kali halaman dibuka
-export const revalidate = 0;
+// Cache halaman admin kategori selama 60 detik untuk Vercel
+// Mengurangi beban koneksi database yang terbatas
+export const revalidate = process.env.NODE_ENV === 'production' ? 60 : 0;
 
 export default async function AdminKategori() {
   // 1. Ambil data kategori beserta hitungan produk di dalamnya
