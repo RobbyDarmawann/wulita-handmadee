@@ -3,10 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import PesananListClient from "./PesananListClient";
 
-// PENTING: Ganti force-dynamic dengan revalidate untuk mengurangi connection pool hits
-// force-dynamic membuat SETIAP request fetch database baru (paling boros koneksi)
-// revalidate 30s: cache 30 detik, cukup untuk user experience tapi tidak membanjiri database
-export const revalidate = process.env.NODE_ENV === 'production' ? 30 : 0;
+export const dynamic = "force-dynamic";
 
 export default async function AdminPesananPage() {
   const supabase = await createClient();

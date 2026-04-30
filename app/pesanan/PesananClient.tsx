@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { PackageX, ChevronDown, ImageIcon, CreditCard, Star, Clock, Truck, Store, Info } from "lucide-react";
-import { resolveImageUrl } from '@/lib/image';
 
 export default function PesananClient({ orders }: { orders: any[] }) {
   const router = useRouter();
@@ -138,7 +137,7 @@ export default function PesananClient({ orders }: { orders: any[] }) {
                             <div className="flex items-center gap-4">
                               {/* Gambar Produk */}
                               {item.product?.image ? (
-                                <img src={resolveImageUrl(item.product.image, "products") || "/images/placeholder.png"} alt={item.productName} className="w-14 h-14 rounded-xl object-cover border border-gray-100 shadow-sm flex-shrink-0" />
+                                <img src={item.product.image.startsWith('/') ? item.product.image : `/uploads/products/${item.product.image}`} alt={item.productName} className="w-14 h-14 rounded-xl object-cover border border-gray-100 shadow-sm flex-shrink-0" />
                               ) : (
                                 <div className="w-14 h-14 rounded-xl bg-gray-50 flex items-center justify-center text-gray-300 border border-gray-100 flex-shrink-0">
                                   <ImageIcon size={24} />

@@ -5,11 +5,9 @@ import Link from "next/link";
 import Image from "next/image";
 import DeleteButton from "./DeleteButton"; 
 import ImagePreview from "../ImagePreview"; // Komponen preview yang kita buat
-import { resolveImageUrl } from "@/lib/image";
 
-// Cache halaman admin kategori selama 60 detik untuk Vercel
-// Mengurangi beban koneksi database yang terbatas
-export const revalidate = process.env.NODE_ENV === 'production' ? 60 : 0;
+// Memastikan data selalu fresh dari database setiap kali halaman dibuka
+export const revalidate = 0;
 
 export default async function AdminKategori() {
   // 1. Ambil data kategori beserta hitungan produk di dalamnya
@@ -86,9 +84,9 @@ export default async function AdminKategori() {
                         <div className="flex items-center gap-5">
                           {/* Gambar Kategori dengan Validasi URL aman */}
                           <div className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-200 flex-shrink-0 overflow-hidden relative shadow-inner flex items-center justify-center">
-                            {resolveImageUrl(cat.image, "categories") ? (
+                            {cat.image && cat.image.trim() !== "" ? (
                               <Image 
-                                src={resolveImageUrl(cat.image, "categories")!} 
+                                src={cat.image.startsWith('/') ? cat.image : `/${cat.image}`} 
                                 alt={cat.name} 
                                 fill 
                                 unoptimized

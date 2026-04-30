@@ -5,10 +5,8 @@ import Image from "next/image";
 import { Plus, Package, Edit3, Tag, PackageOpen } from "lucide-react";
 import DeleteProductButton from "./DeleteProductButton";
 import ProductFilter from "./ProductFilter"; // KITA PANGGIL KOMPONEN FILTER BARU DI SINI
-import { resolveImageUrl } from "@/lib/image";
 
-// Cache halaman admin produk selama 60 detik untuk Vercel
-export const revalidate = process.env.NODE_ENV === 'production' ? 60 : 0;
+export const revalidate = 0;
 
 export default async function AdminProduk({
   searchParams,
@@ -76,8 +74,9 @@ export default async function AdminProduk({
             </thead>
             <tbody className="divide-y divide-amber-50/60">
               {products.map((p) => {
-                const validImageUrl = resolveImageUrl(p.image, "products");
-                const discountPrice = p.discount_price ?? 0;
+                const validImageUrl = p.image && typeof p.image === 'string' && p.image.trim() !== "" 
+                  ? (p.image.startsWith('/') ? p.image : `/${p.image}`) 
+                  : null;
 
                 return (
                   <tr key={p.id} className="group hover:bg-amber-50/20 transition-colors">
@@ -91,7 +90,7 @@ export default async function AdminProduk({
                               <PackageOpen size={28} />
                             </div>
                           )}
-                          {discountPrice > 0 && (
+                          {p.discount_price > 0 && (
                             <div className="absolute top-0 right-0 bg-gradient-to-r from-red-500 to-red-600 text-white text-[8px] font-black px-2 py-1 rounded-bl-xl z-10 shadow-lg tracking-widest uppercase">
                               PROMO
                             </div>
@@ -112,10 +111,10 @@ export default async function AdminProduk({
                     
                     <td className="px-8 py-6">
                       <div className="space-y-1">
-                        {discountPrice > 0 ? (
+                        {p.discount_price > 0 ? (
                           <>
                             <p className="text-[10px] text-amber-900/30 line-through decoration-red-500 font-bold">Rp {formatRp(p.price)}</p>
-                            <p className="font-black text-red-600 text-base drop-shadow-sm">Rp {formatRp(discountPrice)}</p>
+                            <p className="font-black text-red-600 text-base drop-shadow-sm">Rp {formatRp(p.discount_price)}</p>
                           </>
                         ) : (
                           <p className="font-black text-amber-950 text-base">Rp {formatRp(p.price)}</p>

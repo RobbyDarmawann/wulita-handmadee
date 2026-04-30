@@ -1,12 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 
 const prismaClientSingleton = () => {
-  return new PrismaClient({
-    // Konfigurasi connection pool untuk Vercel + Supabase
-    ...(process.env.NODE_ENV === 'production' && {
-      log: ['error'], // Hanya log error di production
-    }),
-  })
+  return new PrismaClient()
 }
 
 declare global {

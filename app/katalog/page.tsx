@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import prisma from '@/lib/prisma';
 import { Search } from 'lucide-react';
-import { resolveImageUrl } from '@/lib/image';
 
 export const metadata = {
   title: "Katalog Produk - Wulita Handmade",
@@ -42,7 +41,11 @@ export default async function KatalogPage({
   ]);
 
   // Helper untuk jalur gambar
-  const getImagePath = (path: string | null) => resolveImageUrl(path, "products") || "/images/placeholder.png";
+  const getImagePath = (path: string | null) => {
+    if (!path) return "/images/placeholder.png";
+    if (path.startsWith('http') || path.startsWith('/')) return path;
+    return path.startsWith('uploads') ? `/${path}` : `/uploads/products/${path}`;
+  };
 
   const currentYear = new Date().getFullYear();
 

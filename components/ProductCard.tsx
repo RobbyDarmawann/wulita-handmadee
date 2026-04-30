@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import Image from 'next/image';
-import { resolveImageUrl } from '@/lib/image';
 
 interface Product {
   id: number;
@@ -20,7 +19,9 @@ export default function ProductCard({ product }: { product: Product }) {
   const isPromo = product.discount_price && product.discount_price > 0;
 
   // Optimasi URL Gambar agar terbaca dengan benar oleh komponen Next/Image
-  const imageUrl = resolveImageUrl(product.image, "products");
+  const imageUrl = product.image && product.image.trim() !== "" 
+    ? (product.image.startsWith('/') ? product.image : `/${product.image}`)
+    : null;
 
   // Fungsi untuk format angka ke Rupiah
   const formatRupiah = (angka: number) => new Intl.NumberFormat('id-ID', { 
