@@ -83,6 +83,8 @@ export async function deleteCategory(id: number) {
   try {
     await prisma.category.delete({ where: { id } });
     revalidatePath("/admin/kategori");
+    revalidatePath("/kategori");
+    revalidatePath("/admin/produk/tambah");
   } catch (error) {
     console.error("Gagal menghapus kategori:", error);
   }
