@@ -4,24 +4,16 @@ import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
-import { redirect } from "next/navigation";
 
 // --- HELPER: SIMPAN GAMBAR KE FOLDER PUBLIC ---
 async function uploadImage(file: FormDataEntryValue | null, subFolder: string) {
-  const isFileLike =
-    !!file &&
-    typeof file === "object" &&
-    "arrayBuffer" in file &&
-    "size" in file &&
-    "name" in file;
-  if (!isFileLike || (file as File).size === 0) return null;
+  if (!(file instanceof File) || file.size === 0) return null;
   
   try {
-    const imageFile = file as File;
-    const bytes = await imageFile.arrayBuffer();
+    const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
-    const fileName = `${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`;
+    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
     const uploadDir = join(process.cwd(), "public/uploads", subFolder);
     
     await mkdir(uploadDir, { recursive: true });
@@ -45,10 +37,6 @@ export async function addProduct(formData: FormData) {
   const categoryId = parseInt(formData.get("category_id") as string);
   const mainImage = formData.get("image");
   const slug = name.toLowerCase().replace(/\s+/g, '-');
-
-  if (!categoryId || Number.isNaN(categoryId)) {
-    throw new Error("Kategori wajib dipilih.");
-  }
 
   const mainImageUrl = await uploadImage(mainImage, "products");
 
@@ -99,7 +87,7 @@ export async function addProduct(formData: FormData) {
 
     revalidatePath("/admin/produk");
     revalidatePath("/");
-    redirect("/admin/produk");
+    return { success: true };
   } catch (error) {
     console.error("Error Add Product:", error);
     throw new Error("Gagal menambah produk baru.");
@@ -115,10 +103,6 @@ export async function updateProduct(id: number, formData: FormData) {
   const categoryId = parseInt(formData.get("category_id") as string);
   const mainImage = formData.get("image");
   const slug = name.toLowerCase().replace(/\s+/g, '-');
-
-  if (!categoryId || Number.isNaN(categoryId)) {
-    throw new Error("Kategori wajib dipilih.");
-  }
 
   const variantMap = new Map();
   Array.from(formData.entries()).forEach(([key, value]) => {
@@ -193,7 +177,7 @@ export async function updateProduct(id: number, formData: FormData) {
     revalidatePath("/admin/produk");
     revalidatePath(`/produk/${slug}`);
     revalidatePath("/");
-    redirect("/admin/produk");
+    return { success: true };
   } catch (error) {
     console.error("Error Update Product:", error);
     throw new Error("Gagal memperbarui produk.");
