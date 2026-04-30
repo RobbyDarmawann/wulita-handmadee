@@ -8,28 +8,54 @@ import { createClient as createSupabase } from '@supabase/supabase-js'
 
 async function uploadImage(file: FormDataEntryValue | null, subFolder: string) {
   if (!file) return null;
-  // buat client server dengan service role (AMAN hanya di server)
-  const supabase = createSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-  try {
-    // konversi ke Buffer
-    const bytes = await (file as File).arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const fileName = `${Date.now()}-${(file as File).name.replace(/\s+/g, '-')}`;
-    const filePath = `${subFolder}/${fileName}`;
 
-    const { error: uploadError } = await supabase.storage
-      .from('images')
-      .upload(filePath, buffer, { contentType: (file as File).type, upsert: false });
+  const driver = process.env.STORAGE_DRIVER || 'local';
 
-    if (uploadError) {
-      console.error('Supabase upload error', uploadError);
+  // Supabase storage driver (server-side; requires SUPABASE_SERVICE_ROLE_KEY)
+  if (driver === 'supabase') {
+    try {
+      const supabase = createSupabase(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+      const f: any = file;
+      const bytes = await f.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const fileName = `${Date.now()}-${f.name.replace(/\s+/g, '-')}`;
+      const filePath = `${subFolder}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage.from('images').upload(filePath, buffer, {
+        contentType: f.type || 'application/octet-stream',
+        upsert: false,
+      });
+
+      if (uploadError) {
+        console.error('Supabase upload error', uploadError);
+        return null;
+      }
+
+      const { data } = supabase.storage.from('images').getPublicUrl(filePath);
+      return data?.publicUrl || null;
+    } catch (err) {
+      console.error('uploadImage supabase error', err);
       return null;
     }
+  }
 
-    const { data } = supabase.storage.from('images').getPublicUrl(filePath);
-    return data?.publicUrl || null;
-  } catch (err) {
-    console.error('uploadImage error', err);
+  // Local filesystem (default)
+  try {
+    const f: any = file;
+    const bytes = await f.arrayBuffer();
+    const buffer = Buffer.from(bytes);
+
+    const fileName = `${Date.now()}-${f.name.replace(/\s+/g, '-')}`;
+    const uploadDir = join(process.cwd(), "public/uploads", subFolder);
+
+    await mkdir(uploadDir, { recursive: true });
+
+    const fullPath = join(uploadDir, fileName);
+    await writeFile(fullPath, buffer);
+
+    return `/uploads/${subFolder}/${fileName}`;
+  } catch (error) {
+    console.error("Gagal upload gambar:", error);
     return null;
   }
 }
