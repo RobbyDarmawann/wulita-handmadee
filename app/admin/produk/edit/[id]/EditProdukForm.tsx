@@ -1,16 +1,23 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { Trash2, Save, RefreshCcw, ChevronDown, Check, Tags, Package, Info } from "lucide-react";
 import ImagePreview from "../../../ImagePreview";
 import { updateProduct } from "../../actions";
-import { useToast } from '@/context/ToastContext';
-import { useRouter } from "next/navigation";
+
+function SubmitButton({ disabled }: { disabled: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button type="submit" disabled={disabled || pending} className="w-full bg-amber-950 hover:bg-black text-white py-5 rounded-[1.25rem] font-black uppercase text-xs tracking-[0.2em] transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/20 active:translate-y-0 flex items-center justify-center gap-3 disabled:bg-gray-300 disabled:shadow-none disabled:transform-none disabled:cursor-not-allowed">
+      {pending ? "Menyimpan..." : <><Save size={18} /> Simpan Perubahan</>}
+    </button>
+  );
+}
 
 export default function EditProdukForm({ product, categories }: any) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const { addToast } = useToast();
+  const updateProductAction = updateProduct.bind(null, product.id);
   
   // STATE CUSTOM DROPDOWN KATEGORI
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
@@ -45,22 +52,11 @@ export default function EditProdukForm({ product, categories }: any) {
     setVariants(newVariants);
   };
 
-  const handleSubmit = async (formData: FormData) => {
-    if (!selectedCategory) {
-      addToast("Kategori wajib dipilih!", "warning");
-      return;
-    }
-    setLoading(true);
-    formData.append("category_id", selectedCategory);
-    await updateProduct(product.id, formData);
-    router.push("/admin/produk");
-  };
-
   const inputStyle = "w-full px-5 py-4 bg-amber-50/30 border-2 border-amber-100/80 rounded-[1.25rem] outline-none focus:border-amber-400 focus:ring-[4px] focus:ring-amber-500/10 transition-all duration-300 text-amber-950 font-medium shadow-inner";
   const labelStyle = "block text-[10px] font-black uppercase text-amber-900/50 ml-1 tracking-widest mb-2";
 
   return (
-    <form action={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+    <form action={updateProductAction} className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
       
       <div className="lg:col-span-2 space-y-8">
         <div className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl shadow-amber-900/5 border border-amber-100/50">
@@ -129,6 +125,7 @@ export default function EditProdukForm({ product, categories }: any) {
           
           <div className="relative">
             <label className={labelStyle + " flex items-center gap-1.5"}><Tags size={12} /> Kategori Pusaka *</label>
+            <input type="hidden" name="category_id" value={selectedCategory} />
             
             <div 
               onClick={() => setIsCategoryOpen(!isCategoryOpen)}
@@ -180,9 +177,7 @@ export default function EditProdukForm({ product, categories }: any) {
              </div>
           </div>
 
-          <button type="submit" disabled={loading} className="w-full bg-amber-950 hover:bg-black text-white py-5 rounded-[1.25rem] font-black uppercase text-xs tracking-[0.2em] transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/20 active:translate-y-0 flex items-center justify-center gap-3 disabled:bg-gray-300 disabled:shadow-none disabled:transform-none disabled:cursor-not-allowed">
-            {loading ? "Menyimpan..." : <><Save size={18} /> Simpan Perubahan</>}
-          </button>
+          <SubmitButton disabled={!selectedCategory} />
         </div>
       </div>
     </form>

@@ -1,16 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import { Trash2, ImageIcon, Package, Info, Tags, Save, ChevronDown, Check } from "lucide-react";
 import { addProduct } from "../actions";
-import { useToast } from '@/context/ToastContext';
-import { useRouter } from "next/navigation";
+
+function SubmitButton({ disabled }: { disabled: boolean }) {
+  const { pending } = useFormStatus();
+
+  return (
+    <button 
+      type="submit" 
+      disabled={disabled || pending}
+      className="w-full bg-amber-950 hover:bg-black text-white py-5 rounded-[1.25rem] font-black uppercase text-xs tracking-[0.2em] transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/20 active:translate-y-0 flex items-center justify-center gap-3 disabled:bg-gray-300 disabled:shadow-none disabled:transform-none disabled:cursor-not-allowed"
+    >
+      {pending ? "Menyimpan..." : <><Save size={18} /> Terbitkan Pusaka</>}
+    </button>
+  );
+}
 
 export default function TambahProdukForm({ categories }: { categories: any[] }) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const { addToast } = useToast();
-  
   // STATE CUSTOM DROPDOWN KATEGORI
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -46,21 +55,11 @@ export default function TambahProdukForm({ categories }: { categories: any[] }) 
     }));
   };
 
-  const handleSubmit = async (formData: FormData) => {
-    if (!selectedCategory) {
-      addToast("Pilih Kategori Pusaka terlebih dahulu, Kapten!", "warning");
-      return;
-    }
-    setLoading(true);
-    await addProduct(formData);
-    router.push("/admin/produk");
-  };
-
   const inputStyle = "w-full px-5 py-4 bg-amber-50/30 border-2 border-amber-100/80 rounded-[1.25rem] outline-none focus:border-amber-400 focus:ring-[4px] focus:ring-amber-500/10 transition-all duration-300 text-amber-950 placeholder:text-amber-900/30 font-medium shadow-inner";
   const labelStyle = "block text-[10px] font-black uppercase text-amber-900/50 ml-1 tracking-widest mb-2";
 
   return (
-    <form action={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+    <form action={addProduct} className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
       
       {/* --- KOLOM KIRI: INFO DASAR & VARIAN --- */}
       <div className="lg:col-span-2 space-y-8">
@@ -214,13 +213,7 @@ export default function TambahProdukForm({ categories }: { categories: any[] }) 
             <input type="number" value={totalStock} readOnly className="w-full px-5 py-4 bg-amber-950/5 border border-amber-900/10 rounded-[1.25rem] text-amber-950 font-black cursor-not-allowed outline-none" />
           </div>
 
-          <button 
-            type="submit" 
-            disabled={loading}
-            className="w-full bg-amber-950 hover:bg-black text-white py-5 rounded-[1.25rem] font-black uppercase text-xs tracking-[0.2em] transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-amber-900/20 active:translate-y-0 flex items-center justify-center gap-3 disabled:bg-gray-300 disabled:shadow-none disabled:transform-none disabled:cursor-not-allowed"
-          >
-            {loading ? "Menyimpan..." : <><Save size={18} /> Terbitkan Pusaka</>}
-          </button>
+          <SubmitButton disabled={!selectedCategory} />
         </div>
 
       </div>
