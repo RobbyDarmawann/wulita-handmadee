@@ -7,13 +7,22 @@ import { join } from "path";
 
 // --- HELPER: SIMPAN GAMBAR KE FOLDER PUBLIC ---
 async function uploadImage(file: FormDataEntryValue | null, subFolder: string) {
-  if (!(file instanceof File) || file.size === 0) return null;
-  
+  const isFileLike =
+    !!file &&
+    typeof file === "object" &&
+    typeof (file as File).arrayBuffer === "function" &&
+    typeof (file as File).name === "string" &&
+    typeof (file as File).size === "number";
+
+  if (!isFileLike || (file as File).size === 0) return null;
+
+  const imageFile = file as File;
+
   try {
-    const bytes = await file.arrayBuffer();
+    const bytes = await imageFile.arrayBuffer();
     const buffer = Buffer.from(bytes);
     
-    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+    const fileName = `${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`;
     const uploadDir = join(process.cwd(), "public/uploads", subFolder);
     
     await mkdir(uploadDir, { recursive: true });
