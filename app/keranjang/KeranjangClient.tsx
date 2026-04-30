@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Trash2, ShoppingBag, Loader2, ArrowRight } from 'lucide-react';
 import { removeFromCart, updateCartQty } from './actions';
+import { resolveImageUrl } from '@/lib/image';
 
 export default function KeranjangClient({ initialItems }: { initialItems: any[] }) {
   const router = useRouter();
@@ -55,7 +56,7 @@ export default function KeranjangClient({ initialItems }: { initialItems: any[] 
             
             <div className="w-28 h-28 bg-gray-50 rounded-2xl flex-shrink-0 overflow-hidden border border-gray-100 relative">
               <img 
-                src={item.product?.image?.startsWith('/') ? item.product.image : `/uploads/products/${item.product?.image}`} 
+                src={resolveImageUrl(item.product?.image, "products") || "/images/placeholder.png"} 
                 alt={item.product?.name} 
                 className="w-full h-full object-cover" 
               />

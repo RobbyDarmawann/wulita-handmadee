@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import DeleteButton from "./DeleteButton"; 
 import ImagePreview from "../ImagePreview"; // Komponen preview yang kita buat
+import { resolveImageUrl } from "@/lib/image";
 
 // Memastikan data selalu fresh dari database setiap kali halaman dibuka
 export const revalidate = 0;
@@ -84,9 +85,9 @@ export default async function AdminKategori() {
                         <div className="flex items-center gap-5">
                           {/* Gambar Kategori dengan Validasi URL aman */}
                           <div className="w-16 h-16 rounded-2xl bg-gray-100 border border-gray-200 flex-shrink-0 overflow-hidden relative shadow-inner flex items-center justify-center">
-                            {cat.image && cat.image.trim() !== "" ? (
+                            {resolveImageUrl(cat.image, "categories") ? (
                               <Image 
-                                src={cat.image.startsWith('/') ? cat.image : `/${cat.image}`} 
+                                src={resolveImageUrl(cat.image, "categories")!} 
                                 alt={cat.name} 
                                 fill 
                                 unoptimized

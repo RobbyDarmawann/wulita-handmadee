@@ -1,9 +1,8 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import { revalidatePath } from "next/cache";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
 
 // --- HELPER: SIMPAN GAMBAR KE FOLDER PUBLIC ---
 async function uploadImage(file: FormDataEntryValue | null, subFolder: string) {
@@ -21,16 +20,20 @@ async function uploadImage(file: FormDataEntryValue | null, subFolder: string) {
   try {
     const bytes = await imageFile.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    
-    const fileName = `${Date.now()}-${imageFile.name.replace(/\s+/g, '-')}`;
-    const uploadDir = join(process.cwd(), "public/uploads", subFolder);
-    
-    await mkdir(uploadDir, { recursive: true });
-    
-    const fullPath = join(uploadDir, fileName);
-    await writeFile(fullPath, buffer);
-    
-    return `/uploads/${subFolder}/${fileName}`;
+    const fileExt = imageFile.name.split(".").pop() || "png";
+    const fileName = `${subFolder}-${Date.now()}.${fileExt}`;
+
+    const { error } = await supabaseAdmin.storage
+      .from(subFolder)
+      .upload(fileName, buffer, {
+        contentType: imageFile.type,
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    const { data } = supabaseAdmin.storage.from(subFolder).getPublicUrl(fileName);
+    return data.publicUrl;
   } catch (error) {
     console.error("Gagal upload gambar:", error);
     return null;

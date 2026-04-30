@@ -2,6 +2,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import prisma from '@/lib/prisma';
 import { ShoppingBag, Tags } from 'lucide-react'; 
+import { resolveImageUrl } from '@/lib/image';
 
 export const metadata = {
   title: "Kategori Produk - Wulita Handmade",
@@ -52,10 +53,9 @@ export default async function KategoriPage() {
                   <div className="absolute -right-4 -top-4 w-20 h-20 bg-amber-50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
                   <div className="w-28 h-28 bg-gray-50 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-all duration-500 overflow-hidden border-4 border-white shadow-inner relative z-10">
-                    {category.image && category.image.trim() !== "" ? (
+                    {resolveImageUrl(category.image, "categories") ? (
                       <Image
-                        /* PERBAIKAN: Langsung menggunakan path dari database */
-                        src={category.image.startsWith('/') ? category.image : `/${category.image}`} 
+                        src={resolveImageUrl(category.image, "categories")!} 
                         alt={category.name}
                         fill
                         unoptimized
