@@ -6,27 +6,24 @@ import { writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 
 async function uploadImage(file: FormDataEntryValue | null, subFolder: string) {
-  if (!(file instanceof File) || file.size === 0) return null;
-
-  const MAX_FILE_SIZE = 10 * 1024 * 1024;
-  if (file.size > MAX_FILE_SIZE) {
-    throw new Error(`File terlalu besar. Maksimal 10MB, file Anda ${(file.size / 1024 / 1024).toFixed(2)}MB`);
-  }
+  if (!file) return null;
 
   try {
-    const bytes = await file.arrayBuffer();
+    const f: any = file;
+    const bytes = await f.arrayBuffer();
     const buffer = Buffer.from(bytes);
 
-    const fileName = `${Date.now()}-${file.name.replace(/\s+/g, '-')}`;
+    const fileName = `${Date.now()}-${f.name.replace(/\s+/g, '-')}`;
     const uploadDir = join(process.cwd(), "public/uploads", subFolder);
-    const fullPath = join(uploadDir, fileName);
 
     await mkdir(uploadDir, { recursive: true });
+
+    const fullPath = join(uploadDir, fileName);
     await writeFile(fullPath, buffer);
 
     return `/uploads/${subFolder}/${fileName}`;
-  } catch (err) {
-    console.error('uploadImage error', err);
+  } catch (error) {
+    console.error("Gagal upload gambar:", error);
     return null;
   }
 }

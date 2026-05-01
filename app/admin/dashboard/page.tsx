@@ -1,4 +1,4 @@
-import prisma from '@/lib/prisma'; // <--- INI KUNCI UTAMANYA BIAR GAK ERROR LIMIT KONEKSI
+import prisma from '@/lib/prisma'; 
 import Link from 'next/link';
 import AdminChart from '@/components/AdminChart';
 import { AlertTriangle, CheckCircle2 } from 'lucide-react';
@@ -6,25 +6,31 @@ import { AlertTriangle, CheckCircle2 } from 'lucide-react';
 export const revalidate = 0;
 
 export default async function DashboardPage() {
-  // Ambil SEMUA data secara paralel biar koneksi database efisien & super cepat
+  // Ambil data menggunakan fungsi agregasi agar RAM Vercel tidak jebol!
   const [
     totalOrdersCount,
     totalCustomers,
     pendingVerifications,
-    completedOrders,
+    revenueAggregation, // <--- KITA UBAH JADI AGGREGATE
     recentOrders,
     lowStockItems
   ] = await Promise.all([
     prisma.order.count(),
     prisma.user.count({ where: { role: 'customer' } }),
     prisma.order.count({ where: { status: { in: ['menunggu pembayaran', 'dibayar'] } } }),
-    prisma.order.findMany({ where: { status: 'pesanan selesai' } }), // Sesuaikan dengan status skema baru
+    
+    // SOLUSI: Jangan pakai findMany, tapi pakai aggregate SUM!
+    prisma.order.aggregate({ 
+      where: { status: { contains: 'selesai' } },
+      _sum: { totalPrice: true } 
+    }),
+    
     prisma.order.findMany({ take: 5, orderBy: { createdAt: 'desc' } }),
     prisma.product.findMany({ where: { stock: { lt: 5 } }, take: 5 })
   ]);
 
-  // Total Pendapatan dari pesanan selesai (Gunakan camelCase: totalPrice)
-  const totalRevenue = completedOrders.reduce((sum, order) => sum + (order.totalPrice || 0), 0);
+  // Ekstrak hasil perhitungan langsung dari database
+  const totalRevenue = revenueAggregation._sum.totalPrice || 0;
 
   // Format Uang Rupiah
   const formatRp = (angka: number) => new Intl.NumberFormat('id-ID').format(angka);
@@ -123,11 +129,9 @@ export default async function DashboardPage() {
                 <div key={order.id} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-2xl transition-colors border border-transparent hover:border-gray-100">
                   <div className="flex items-center gap-4">
                     <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center font-black text-gray-500 shadow-inner uppercase">
-                      {/* Perbaikan di sini: recipientName */}
                       {order.recipientName?.substring(0, 1) || '?'}
                     </div>
                     <div>
-                      {/* Perbaikan di sini: recipientName */}
                       <p className="font-bold text-gray-900 text-sm line-clamp-1">{order.recipientName || 'Pelanggan'}</p>
                       <p className={`text-[9px] font-black uppercase tracking-wider mt-0.5 ${order.status === 'menunggu pembayaran' ? 'text-red-500' : 'text-amber-600'}`}>
                         {order.status.replace('_', ' ')}
@@ -135,7 +139,6 @@ export default async function DashboardPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    {/* Perbaikan di sini: totalPrice */}
                     <p className="font-black text-amber-900 text-sm">Rp {formatRp(order.totalPrice)}</p>
                   </div>
                 </div>
